@@ -2,8 +2,14 @@
 
 class HomeController
 {
-    public function index() 
+    public function index(): void
     {
-        require_once PATH_VIEW . 'main.php';
+        $productModel = new ProductModel();
+        $products = $productModel->featured();
+        $officeProducts = $productModel->byCollection('Đồ công sở');
+        $streetwearProducts = $productModel->byCollection('Streetwear');
+        $title = 'HHDM Studio | Thời trang nam hiện đại';
+
+        require PATH_VIEW . 'main.php';
     }
 }

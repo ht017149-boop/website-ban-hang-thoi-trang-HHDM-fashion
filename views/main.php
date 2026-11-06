@@ -14,48 +14,7 @@
     <script src="assets/js/main.js" defer></script>
 </head>
 <body>
-    <div class="announcement">
-        MIỄN PHÍ VẬN CHUYỂN TỪ 899K · ĐỔI SIZE DỄ DÀNG TRONG 7 NGÀY
-    </div>
-
-    <header class="header">
-        <div class="header-main">
-            <nav class="nav-links" aria-label="Điều hướng chính">
-                <a href="#hang-moi">Hàng mới</a>
-                <a href="#cong-so">Đồ công sở</a>
-                <a href="#streetwear">Streetwear</a>
-                <a href="#danh-muc">Danh mục</a>
-            </nav>
-
-            <a class="brand" href="<?= htmlspecialchars(BASE_URL) ?>" aria-label="HHDM Studio trang chủ">
-                HHDM
-            </a>
-
-            <div class="header-actions">
-                <a class="icon-link" href="#san-pham" aria-label="Tìm kiếm">
-                    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <circle cx="10.8" cy="10.8" r="6.8" />
-                        <path d="m16 16 4.5 4.5" />
-                    </svg>
-                    <span>Tìm kiếm</span>
-                </a>
-                <a class="icon-link" href="#dang-nhap" aria-label="Tài khoản">
-                    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <circle cx="12" cy="8" r="3.5" />
-                        <path d="M4.5 20c.8-4 3.2-6 7.5-6s6.7 2 7.5 6" />
-                    </svg>
-                    <span>Tài khoản</span>
-                </a>
-                <a class="icon-link" href="#san-pham" aria-label="Giỏ hàng">
-                    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M4 8h16l-1.3 12H5.3L4 8Z" />
-                        <path d="M9 9V6a3 3 0 0 1 6 0v3" />
-                    </svg>
-                    <span>Giỏ hàng (<b id="cart-count">0</b>)</span>
-                </a>
-            </div>
-        </div>
-    </header>
+    <?php require PATH_VIEW . 'partials/header.php'; ?>
 
     <main>
         <section class="hero" aria-label="Bộ sưu tập thời trang nam mới">
@@ -131,21 +90,21 @@
             </div>
 
             <div class="category-grid">
-                <a class="category-card" href="#san-pham">
+                <a class="category-card" href="?action=products">
                     <img src="https://images.unsplash.com/photo-1617137968427-85924c800a22?auto=format&fit=crop&w=900&q=85" alt="Thời trang nam hiện đại" loading="lazy">
                     <span class="category-label">
                         <b>Thời trang nam</b>
                         <span>Khám phá ngay →</span>
                     </span>
                 </a>
-                <a class="category-card" href="#san-pham">
+                <a class="category-card" href="?action=products">
                     <img src="https://images.unsplash.com/photo-1516826957135-700dedea698c?auto=format&fit=crop&w=900&q=85" alt="Phong cách streetwear nam" loading="lazy">
                     <span class="category-label">
                         <b>Streetwear nam</b>
                         <span>Khám phá ngay →</span>
                     </span>
                 </a>
-                <a class="category-card" href="#san-pham">
+                <a class="category-card" href="?action=products">
                     <img src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=900&q=80" alt="Phụ kiện thời trang" loading="lazy">
                     <span class="category-label">
                         <b>Phụ kiện</b>
@@ -156,78 +115,50 @@
         </section>
 
         <section class="section section--products" id="hang-moi">
-            <div class="section-heading">
-                <span class="eyebrow">HHDM DAILY EDIT</span>
-                <h2 id="san-pham">Sản phẩm thời trang hàng ngày</h2>
-                <p>Những thiết kế dễ mặc, dễ phối cho tủ đồ nam hiện đại.</p>
+            <div class="section-heading section-heading--row">
+                <div>
+                    <span class="eyebrow">HHDM DAILY EDIT</span>
+                    <h2 id="san-pham">Sản phẩm thời trang hàng ngày</h2>
+                    <p>Những thiết kế dễ mặc, dễ phối cho tủ đồ nam hiện đại.</p>
+                </div>
+                <a class="text-link" href="?action=products">Xem tất cả sản phẩm →</a>
             </div>
-
             <div class="products">
-                <article class="product-card">
-                    <div class="product-image">
-                        <img src="https://images.unsplash.com/photo-1603252110481-7ba873bf42ab?auto=format&fit=crop&w=750&q=85" alt="Áo sơ mi nam màu trung tính" loading="lazy">
-                        <span class="badge">Bán chạy</span>
-                        <button class="quick-add" type="button">Thêm vào giỏ</button>
-                    </div>
-                    <div class="product-info">
-                        <h3>Áo sơ mi nam linen An Nhiên</h3>
-                        <div class="price">590.000₫</div>
-                        <div class="swatches">
-                            <i class="swatch swatch--1"></i>
-                            <i class="swatch swatch--2"></i>
-                            <i class="swatch swatch--3"></i>
-                        </div>
-                    </div>
-                </article>
+                <?php foreach ($products as $product): ?>
+                    <?php require PATH_VIEW . 'partials/product-card.php'; ?>
+                <?php endforeach; ?>
+            </div>
+        </section>
 
-                <article class="product-card">
-                    <div class="product-image">
-                        <img src="https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=750&q=85" alt="Áo khoác nam phong cách tối giản" loading="lazy">
-                        <span class="badge">Hàng mới</span>
-                        <button class="quick-add" type="button">Thêm vào giỏ</button>
-                    </div>
-                    <div class="product-info">
-                        <h3>Áo khoác nam Mộc</h3>
-                        <div class="price">1.290.000₫</div>
-                        <div class="swatches">
-                            <i class="swatch swatch--4"></i>
-                            <i class="swatch swatch--5"></i>
-                        </div>
-                    </div>
-                </article>
+        <section class="section section--collection-products" id="cong-so">
+            <div class="section-heading section-heading--row">
+                <div>
+                    <span class="eyebrow">SMART CASUAL</span>
+                    <h2>Chỉn chu mỗi ngày</h2>
+                    <p>Những thiết kế gọn gàng cho công việc và những dịp cần chỉn chu.</p>
+                </div>
+                <a class="text-link" href="?action=products&amp;collection=Đồ%20công%20sở">Khám phá đồ công sở →</a>
+            </div>
+            <div class="products collection-products">
+                <?php foreach ($officeProducts as $product): ?>
+                    <?php require PATH_VIEW . 'partials/product-card.php'; ?>
+                <?php endforeach; ?>
+            </div>
+        </section>
 
-                <article class="product-card">
-                    <div class="product-image">
-                        <img src="https://images.unsplash.com/photo-1551163943-3f6a855d1153?auto=format&fit=crop&w=750&q=80" alt="Túi đeo chéo nam phong cách tối giản" loading="lazy">
-                        <span class="badge">Bán chạy</span>
-                        <button class="quick-add" type="button">Thêm vào giỏ</button>
-                    </div>
-                    <div class="product-info">
-                        <h3>Túi đeo chéo nam Gạo</h3>
-                        <div class="price">790.000₫</div>
-                        <div class="swatches">
-                            <i class="swatch swatch--6"></i>
-                            <i class="swatch swatch--7"></i>
-                            <i class="swatch swatch--8"></i>
-                        </div>
-                    </div>
-                </article>
-
-                <article class="product-card">
-                    <div class="product-image">
-                        <img src="https://images.unsplash.com/photo-1523398002811-999ca8dec234?auto=format&fit=crop&w=750&q=85" alt="Trang phục nam phong cách hiện đại" loading="lazy">
-                        <span class="badge">Hàng mới</span>
-                        <button class="quick-add" type="button">Thêm vào giỏ</button>
-                    </div>
-                    <div class="product-info">
-                        <h3>Áo polo nam Hoa Nắng</h3>
-                        <div class="price">890.000₫ <span class="old-price">1.090.000₫</span></div>
-                        <div class="swatches">
-                            <i class="swatch swatch--9"></i>
-                            <i class="swatch swatch--10"></i>
-                        </div>
-                    </div>
-                </article>
+        <section class="section section--collection-products" id="streetwear">
+            <div class="section-heading section-heading--row">
+                <div>
+                    <span class="eyebrow">STREETWEAR · MAKE IT YOURS</span>
+                    <h2>Tự do thể hiện mình</h2>
+                    <p>Phom thoải mái và những lớp phối tạo nên dấu ấn riêng.</p>
+                </div>
+                <a class="text-link" href="?action=products&amp;collection=Streetwear">Khám phá streetwear →</a>
+            </div>
+            <div class="products collection-products">
+                <?php foreach ($streetwearProducts as $product): ?>
+                    <?php require PATH_VIEW . 'partials/product-card.php'; ?>
+                <?php endforeach; ?>
             </div>
         </section>
 
@@ -239,7 +170,7 @@
             </div>
 
             <div class="collection-grid">
-                <a class="collection-card collection-card--office" id="cong-so" href="#hang-moi">
+                <a class="collection-card collection-card--office" href="#hang-moi">
                     <img src="https://images.unsplash.com/photo-1617137968427-85924c800a22?auto=format&fit=crop&w=1100&q=85" alt="Trang phục nam smart casual" loading="lazy">
                     <span class="collection-copy">
                         <small>SMART CASUAL</small>
@@ -247,7 +178,7 @@
                         <i>Khám phá đồ công sở →</i>
                     </span>
                 </a>
-                <a class="collection-card collection-card--street" id="streetwear" href="#hang-moi">
+                <a class="collection-card collection-card--street" href="#hang-moi">
                     <img src="https://images.unsplash.com/photo-1523398002811-999ca8dec234?auto=format&fit=crop&w=1100&q=85" alt="Phong cách streetwear nam" loading="lazy">
                     <span class="collection-copy">
                         <small>STREETWEAR</small>
@@ -304,36 +235,6 @@
         </section>
     </main>
 
-    <footer class="footer">
-        <div class="footer-inner">
-            <div class="footer-about">
-                <div class="footer-brand">HHDM</div>
-                <p>Mặc điều bạn yêu. Thiết kế dành cho những ngày bình thường trở nên thật đặc biệt.</p>
-            </div>
-            <div>
-                <h3>Khám phá</h3>
-                <a href="#hang-moi">Hàng mới</a>
-                <a href="#danh-muc">Thời trang nam</a>
-                <a href="#streetwear">Streetwear nam</a>
-                <a href="#danh-muc">Phụ kiện</a>
-            </div>
-            <div>
-                <h3>Hỗ trợ</h3>
-                <a href="#ho-tro">Hướng dẫn mua hàng</a>
-                <a href="#ho-tro">Chính sách đổi trả</a>
-                <a href="#ho-tro">Vận chuyển & giao hàng</a>
-            </div>
-            <div>
-                <h3>Kết nối</h3>
-                <a href="#facebook">Facebook</a>
-                <a href="#instagram">Instagram</a>
-                <span>hello@hhdm.vn</span>
-            </div>
-        </div>
-        <div class="copyright">
-            <span>© 2025 HHDM Studio. All rights reserved.</span>
-            <span>Được làm với sự chăm chút tại Việt Nam.</span>
-        </div>
-    </footer>
+    <?php require PATH_VIEW . 'partials/footer.php'; ?>
 </body>
 </html>
