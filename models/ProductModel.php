@@ -58,9 +58,27 @@ class ProductModel extends BaseModel
         }
         unset($category);
 
+        $featuredProducts = array_values(array_filter(array_map(
+            static fn(array $category): ?array => $category['products'][0] ?? null,
+            $categories
+        )));
+
+        $bannerStatement = $this->pdo->query(
+            "SELECT placement, eyebrow, title, description, image_url, image_alt, badge_text,
+                    button_label, target_url, sort_order
+             FROM homepage_banners
+             WHERE status = 'active'
+             ORDER BY sort_order ASC, banner_id ASC"
+        );
+        $banners = [];
+        foreach ($bannerStatement->fetchAll() as $banner) {
+            $banners[$banner['placement']] = $banner;
+        }
+
         return [
             'categories' => $categories,
-            'new_products' => array_slice($products, 0, 4),
+            'new_products' => $featuredProducts,
+            'banners' => $banners,
         ];
     }
 }
