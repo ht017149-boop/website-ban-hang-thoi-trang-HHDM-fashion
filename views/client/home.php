@@ -25,7 +25,7 @@ $categories = $homepageData['categories'];
       <a class="brand" href="#home" aria-label="HHDM Fashion trang chủ">HHDM<span>FASHION</span></a>
       <form class="search-form" id="search-form" role="search"><label class="sr-only" for="search-input">Tìm kiếm sản phẩm</label><input id="search-input" type="search" placeholder="Bạn đang tìm sản phẩm nào?"><button type="submit" aria-label="Tìm kiếm">⌕</button></form>
       <div class="account-actions">
-        <?php if ($user): ?><span class="welcome">Xin chào, <?= $escape($user['full_name'] ?? 'bạn') ?></span><form method="post" action="index.php?page=logout" class="logout-form"><input type="hidden" name="csrf_token" value="<?= $escape($_SESSION['csrf_token'] ?? '') ?>"><button type="submit">Đăng xuất</button></form><?php else: ?><a href="index.php?page=login"><span class="action-icon">♙</span><span>Tài khoản</span></a><?php endif; ?>
+        <?php if ($user): ?><?php if (($user['role'] ?? '') === 'admin'): ?><a href="index.php?page=admin">Quản trị</a><?php endif; ?><span class="welcome">Xin chào, <?= $escape($user['full_name'] ?? 'bạn') ?></span><form method="post" action="index.php?page=logout" class="logout-form"><input type="hidden" name="csrf_token" value="<?= $escape($_SESSION['csrf_token'] ?? '') ?>"><button type="submit">Đăng xuất</button></form><?php else: ?><a href="index.php?page=login"><span class="action-icon">♙</span><span>Tài khoản</span></a><?php endif; ?>
         <button class="cart-trigger" id="cart-trigger" type="button" aria-label="Mở giỏ hàng"><span class="action-icon">♧</span><span>Giỏ hàng</span><b id="cart-count">0</b></button>
       </div>
     </div>

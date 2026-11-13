@@ -1,7 +1,7 @@
 <?php
 
 define('BASE_URL',          'http://localhost/HHDM_Fashion/');
-define('BASE_URL_ADMIN',    'http://localhost/HHDM_Fashion/admin');
+define('BASE_URL_ADMIN',    BASE_URL . 'index.php?page=admin');
 
 define('PATH_ROOT',         __DIR__ . '/../');
 
