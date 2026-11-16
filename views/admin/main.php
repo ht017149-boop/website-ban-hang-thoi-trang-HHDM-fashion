@@ -7,7 +7,7 @@ $adminName = $escape($_SESSION['user']['full_name'] ?? 'Quản trị viên');
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title><?= $currentPage === 'accounts' ? 'Quản lý tài khoản' : ($currentPage === 'products' ? 'Quản lý sản phẩm' : 'Dashboard') ?> | HHDM Fashion</title>
+  <title><?= $currentPage === 'accounts' ? 'Quản lý tài khoản' : ($currentPage === 'products' ? 'Quản lý sản phẩm' : ($currentPage === 'categories' ? 'Quản lý danh mục' : 'Dashboard')) ?> | HHDM Fashion</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap&subset=vietnamese" rel="stylesheet">
@@ -24,6 +24,7 @@ $adminName = $escape($_SESSION['user']['full_name'] ?? 'Quản trị viên');
       <div class="side-label">QUẢN LÝ</div>
       <a class="side-link <?= $currentPage === 'accounts' ? 'active' : '' ?>" href="index.php?page=admin-accounts">Tài khoản</a>
       <a class="side-link <?= $currentPage === 'products' ? 'active' : '' ?>" href="index.php?page=admin-products">Sản phẩm</a>
+      <a class="side-link <?= $currentPage === 'categories' ? 'active' : '' ?>" href="index.php?page=admin-categories">Danh mục</a>
       <div class="side-bottom"><a href="index.php">← Xem cửa hàng</a><form method="post" action="index.php?page=logout"><input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>"><button type="submit" style="border:0;background:none;color:#c6c9bf;font:11px 'DM Sans',Arial,sans-serif;padding:10px 12px;cursor:pointer">Đăng xuất</button></form></div>
     </aside>
     <main class="main">

@@ -16,6 +16,9 @@ return static function (): void {
         case 'logout':
             (new AuthController())->logout();
             return;
+        case 'product_detail':
+            (new HomeController())->detail();
+            return;
         case 'home':
         default:
             (new HomeController())->index();

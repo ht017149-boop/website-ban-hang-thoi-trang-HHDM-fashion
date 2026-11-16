@@ -6,7 +6,7 @@ require_once __DIR__ . '/configs/helper.php';
 session_start();
 
 $page = (string) ($_GET['page'] ?? 'home');
-$routeFile = in_array($page, ['admin', 'admin-accounts', 'admin-products'], true)
+$routeFile = in_array($page, ['admin', 'admin-accounts', 'admin-account-create', 'admin-products', 'admin-product-create', 'admin-product-edit', 'admin-categories', 'admin-category-create', 'admin-category-edit'], true)
     ? __DIR__ . '/routes/admin.php'
     : __DIR__ . '/routes/client.php';
 $dispatch = require $routeFile;

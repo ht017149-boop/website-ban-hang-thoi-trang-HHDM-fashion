@@ -21,16 +21,43 @@ class AdminController
         $page = (string) ($_GET['page'] ?? 'admin');
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            if ($page === 'admin-products') {
+            if (in_array($page, ['admin-products', 'admin-product-create', 'admin-product-edit'], true)) {
                 $this->handleProductAction();
             }
-            if ($page === 'admin-accounts') {
+            if (in_array($page, ['admin-accounts', 'admin-account-create'], true)) {
                 $this->handleAccountAction();
+            }
+            if (in_array($page, ['admin-categories', 'admin-category-create', 'admin-category-edit'], true)) {
+                $this->handleCategoryAction();
             }
         }
 
+        if ($page === 'admin-category-create') {
+            $this->showCategoryCreate();
+            return;
+        }
+        if ($page === 'admin-category-edit') {
+            $this->showCategoryEdit();
+            return;
+        }
+        if ($page === 'admin-categories') {
+            $this->showCategories();
+            return;
+        }
+        if ($page === 'admin-account-create') {
+            $this->showAccountCreate();
+            return;
+        }
         if ($page === 'admin-accounts') {
             $this->showAccounts();
+            return;
+        }
+        if ($page === 'admin-product-create') {
+            $this->showProductCreate();
+            return;
+        }
+        if ($page === 'admin-product-edit') {
+            $this->showProductEdit();
             return;
         }
         if ($page === 'admin-products') {
@@ -48,14 +75,33 @@ class AdminController
 
     private function showProducts(): void
     {
+        $productList = $this->products->getAdminProducts();
+        $currentPage = 'products';
+        $flash = $this->takeFlash();
+        $csrfToken = $this->csrfToken();
+        $contentView = PATH_VIEW_ADMIN . 'product/index.php';
+        require PATH_VIEW_MAIN_ADMIN;
+    }
+
+    private function showProductCreate(): void
+    {
+        $this->renderProductForm(null);
+    }
+
+    private function showProductEdit(): void
+    {
         $productId = (int) ($_GET['id'] ?? 0);
         $productToEdit = $productId > 0 ? $this->products->findAdminProduct($productId) : null;
-        if ($productId > 0 && !$productToEdit) {
+        if ($productId < 1 || !$productToEdit) {
             $_SESSION['admin_flash'] = 'Không tìm thấy sản phẩm cần chỉnh sửa.';
             header('Location: index.php?page=admin-products');
             exit;
         }
+        $this->renderProductForm($productToEdit);
+    }
 
+    private function renderProductForm(?array $productToEdit): void
+    {
         $productForm = $_SESSION['product_form'] ?? $productToEdit ?? [
             'product_id' => 0,
             'category_id' => '',
@@ -69,21 +115,30 @@ class AdminController
             'sizes' => 'S, M, L, XL',
         ];
         unset($_SESSION['product_form']);
-        $productForm['product_id'] = (int) ($productForm['product_id'] ?? $productId);
+        $productForm['product_id'] = (int) ($productForm['product_id'] ?? ($productToEdit['product_id'] ?? 0));
         $productErrors = $_SESSION['product_errors'] ?? [];
         unset($_SESSION['product_errors']);
-        $productList = $this->products->getAdminProducts();
         $categories = $this->products->getAdminCategories();
         $currentPage = 'products';
         $flash = $this->takeFlash();
         $csrfToken = $this->csrfToken();
-        $contentView = PATH_VIEW_ADMIN . 'product/index.php';
+        $contentView = PATH_VIEW_ADMIN . 'product/' . ((int) $productForm['product_id'] > 0 ? 'edit.php' : 'create.php');
         require PATH_VIEW_MAIN_ADMIN;
     }
 
     private function showAccounts(): void
     {
         $accounts = $this->users->getAccounts();
+
+        $currentPage = 'accounts';
+        $flash = $this->takeFlash();
+        $csrfToken = $this->csrfToken();
+        $contentView = PATH_VIEW_ADMIN . 'accounts/index.php';
+        require PATH_VIEW_MAIN_ADMIN;
+    }
+
+    private function showAccountCreate(): void
+    {
         $accountErrors = $_SESSION['account_errors'] ?? [];
         $accountOld = $_SESSION['account_old'] ?? ['full_name' => '', 'email' => '', 'phone' => '', 'role' => 'customer'];
         unset($_SESSION['account_errors'], $_SESSION['account_old']);
@@ -91,8 +146,164 @@ class AdminController
         $currentPage = 'accounts';
         $flash = $this->takeFlash();
         $csrfToken = $this->csrfToken();
-        $contentView = PATH_VIEW_ADMIN . 'accounts/index.php';
+        $contentView = PATH_VIEW_ADMIN . 'accounts/create.php';
         require PATH_VIEW_MAIN_ADMIN;
+    }
+
+    private function showCategories(): void
+    {
+        $categoryList = $this->products->getAdminCategoriesWithCounts();
+        $currentPage = 'categories';
+        $flash = $this->takeFlash();
+        $csrfToken = $this->csrfToken();
+        $contentView = PATH_VIEW_ADMIN . 'category/index.php';
+        require PATH_VIEW_MAIN_ADMIN;
+    }
+
+    private function showCategoryCreate(): void
+    {
+        $this->renderCategoryForm(null);
+    }
+
+    private function showCategoryEdit(): void
+    {
+        $categoryId = (int) ($_GET['id'] ?? 0);
+        $categoryToEdit = $categoryId > 0 ? $this->products->findAdminCategory($categoryId) : null;
+        if ($categoryId < 1 || !$categoryToEdit) {
+            $_SESSION['admin_flash'] = 'Không tìm thấy danh mục cần chỉnh sửa.';
+            header('Location: index.php?page=admin-categories');
+            exit;
+        }
+        $this->renderCategoryForm($categoryToEdit);
+    }
+
+    private function renderCategoryForm(?array $categoryToEdit): void
+    {
+        $categoryForm = $_SESSION['category_form'] ?? $categoryToEdit ?? [
+            'category_id' => 0,
+            'category_name' => '',
+            'slug' => '',
+            'image_url' => '',
+            'description' => '',
+            'status' => 'active',
+        ];
+        unset($_SESSION['category_form']);
+        $categoryForm['category_id'] = (int) ($categoryForm['category_id'] ?? ($categoryToEdit['category_id'] ?? 0));
+        $categoryErrors = $_SESSION['category_errors'] ?? [];
+        unset($_SESSION['category_errors']);
+        $currentPage = 'categories';
+        $flash = $this->takeFlash();
+        $csrfToken = $this->csrfToken();
+        $contentView = PATH_VIEW_ADMIN . 'category/' . ((int) $categoryForm['category_id'] > 0 ? 'edit.php' : 'create.php');
+        require PATH_VIEW_MAIN_ADMIN;
+    }
+
+    private function handleCategoryAction(): void
+    {
+        if (!$this->validCsrfToken()) {
+            http_response_code(400);
+            exit('Yêu cầu không hợp lệ hoặc phiên làm việc đã hết hạn.');
+        }
+
+        $action = (string) ($_POST['action'] ?? '');
+        if ($action === 'save_category') {
+            $this->saveCategory();
+        } elseif ($action === 'delete_category') {
+            $this->deleteCategory();
+        } else {
+            http_response_code(400);
+            exit('Thao tác danh mục không hợp lệ.');
+        }
+    }
+
+    private function saveCategory(): void
+    {
+        $categoryId = (int) ($_POST['category_id'] ?? 0);
+        $existingCategory = $categoryId > 0 ? $this->products->findAdminCategory($categoryId) : null;
+        $form = [
+            'category_name' => trim((string) ($_POST['category_name'] ?? '')),
+            'slug' => trim((string) ($_POST['slug'] ?? '')),
+            'image_url' => trim((string) ($_POST['image_url'] ?? '')),
+            'description' => trim((string) ($_POST['description'] ?? '')),
+            'status' => (string) ($_POST['status'] ?? ''),
+        ];
+        $errors = [];
+
+        if ($categoryId > 0 && !$existingCategory) {
+            $errors[] = 'Không tìm thấy danh mục cần chỉnh sửa.';
+        }
+        if ($form['category_name'] === '' || mb_strlen($form['category_name']) > 150) {
+            $errors[] = 'Tên danh mục không được để trống và tối đa 150 ký tự.';
+        }
+        if ($form['slug'] === '') {
+            $form['slug'] = $this->slugify($form['category_name']);
+        } else {
+            $form['slug'] = $this->slugify($form['slug']);
+        }
+        if ($form['slug'] === '' || strlen($form['slug']) > 180) {
+            $errors[] = 'Đường dẫn (slug) không hợp lệ hoặc quá 180 ký tự.';
+        } elseif ($this->products->categorySlugExists($form['slug'], $categoryId)) {
+            $errors[] = 'Đường dẫn (slug) này đã được dùng bởi danh mục khác.';
+        }
+        if (!in_array($form['status'], ['active', 'inactive'], true)) {
+            $errors[] = 'Trạng thái danh mục không hợp lệ.';
+        }
+        if (mb_strlen($form['description']) > 60000) {
+            $errors[] = 'Mô tả danh mục quá dài.';
+        }
+        if (mb_strlen($form['image_url']) > 500) {
+            $errors[] = 'URL ảnh danh mục quá dài.';
+        }
+
+        if ($errors) {
+            $_SESSION['category_errors'] = $errors;
+            $_SESSION['category_form'] = $form + ['category_id' => $categoryId];
+            $this->redirectToCategoryForm($categoryId);
+        }
+
+        $category = [
+            'category_name' => $form['category_name'],
+            'slug' => $form['slug'],
+            'image_url' => $form['image_url'] !== '' ? $form['image_url'] : null,
+            'description' => $form['description'] !== '' ? $form['description'] : null,
+            'status' => $form['status'],
+        ];
+        $this->products->saveAdminCategory($category, $categoryId > 0 ? $categoryId : null);
+
+        $_SESSION['admin_flash'] = $categoryId > 0 ? 'Đã cập nhật danh mục trong database.' : 'Đã thêm danh mục vào database.';
+        $this->redirectToCategories();
+    }
+
+    private function deleteCategory(): void
+    {
+        $categoryId = (int) ($_POST['category_id'] ?? 0);
+        if ($categoryId < 1 || !$this->products->findAdminCategory($categoryId)) {
+            $_SESSION['admin_flash'] = 'Không tìm thấy danh mục cần xóa.';
+            $this->redirectToCategories();
+        }
+
+        try {
+            $this->products->deleteAdminCategory($categoryId);
+        } catch (PDOException $exception) {
+            if ($exception->getCode() !== '23000') {
+                throw $exception;
+            }
+            $_SESSION['admin_flash'] = 'Không thể xóa danh mục đang có sản phẩm.';
+            $this->redirectToCategories();
+        }
+
+        $_SESSION['admin_flash'] = 'Đã xóa danh mục khỏi database.';
+        $this->redirectToCategories();
+    }
+
+    private function slugify(string $value): string
+    {
+        $translit = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
+        $ascii = $translit !== false && $translit !== '' ? $translit : preg_replace('/[^\x20-\x7E]/', '', $value);
+        $slug = strtolower((string) $ascii);
+        $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
+
+        return trim((string) $slug, '-');
     }
 
     private function handleAccountAction(): void
@@ -218,7 +429,7 @@ class AdminController
         if ($errors) {
             $_SESSION['product_errors'] = $errors;
             $_SESSION['product_form'] = $form;
-            $this->redirectToProducts($productId);
+            $this->redirectToProductForm($productId);
         }
 
         $uploadedImagePath = null;
@@ -228,7 +439,7 @@ class AdminController
             } catch (InvalidArgumentException $exception) {
                 $_SESSION['product_errors'] = [$exception->getMessage()];
                 $_SESSION['product_form'] = $form;
-                $this->redirectToProducts($productId);
+                $this->redirectToProductForm($productId);
             }
         }
 
@@ -409,7 +620,7 @@ class AdminController
         if ($errors) {
             $_SESSION['account_errors'] = $errors;
             $_SESSION['account_old'] = $old;
-            $this->redirectToAccounts();
+            $this->redirectToAccountCreate();
         }
 
         try {
@@ -426,7 +637,7 @@ class AdminController
             }
             $_SESSION['account_errors'] = ['Email này đã được sử dụng.'];
             $_SESSION['account_old'] = $old;
-            $this->redirectToAccounts();
+            $this->redirectToAccountCreate();
         }
 
         $_SESSION['admin_flash'] = 'Đã tạo tài khoản ' . ($old['role'] === 'admin' ? 'quản trị viên.' : 'khách hàng.');
@@ -539,10 +750,41 @@ class AdminController
         exit;
     }
 
-    private function redirectToProducts(int $productId = 0): void
+    private function redirectToAccountCreate(): void
     {
-        $query = $productId > 0 ? '&id=' . $productId : '';
-        header('Location: index.php?page=admin-products' . $query);
+        header('Location: index.php?page=admin-account-create');
+        exit;
+    }
+
+    private function redirectToCategories(): void
+    {
+        header('Location: index.php?page=admin-categories');
+        exit;
+    }
+
+    private function redirectToCategoryForm(int $categoryId = 0): void
+    {
+        if ($categoryId > 0) {
+            header('Location: index.php?page=admin-category-edit&id=' . $categoryId);
+            exit;
+        }
+        header('Location: index.php?page=admin-category-create');
+        exit;
+    }
+
+    private function redirectToProducts(): void
+    {
+        header('Location: index.php?page=admin-products');
+        exit;
+    }
+
+    private function redirectToProductForm(int $productId = 0): void
+    {
+        if ($productId > 0) {
+            header('Location: index.php?page=admin-product-edit&id=' . $productId);
+            exit;
+        }
+        header('Location: index.php?page=admin-product-create');
         exit;
     }
 }
