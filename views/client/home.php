@@ -3,11 +3,37 @@ $user = $_SESSION['user'] ?? null;
 $escape = static fn($value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 $newProducts = $homepageData['new_products'];
 $categories = $homepageData['categories'];
-$banners = $homepageData['banners'];
-$featureBanners = array_values(array_filter(
-    $banners,
-    static fn(array $banner): bool => str_starts_with($banner['placement'], 'feature_')
-));
+
+$heroSlides = [
+    [
+        'image_url' => 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=2200&q=88',
+        'image_alt' => 'Bộ sưu tập thời trang mới HHDM',
+        'eyebrow' => 'HHDM · COLLECTION 2026',
+        'title' => 'PHONG CÁCH, KHÔNG GIỚI HẠN',
+        'description' => 'Khám phá thời trang nữ, nam và phụ kiện cho mọi nhịp sống.',
+        'button_label' => 'KHÁM PHÁ BỘ SƯU TẬP',
+        'target_url' => '#new-arrivals',
+    ],
+    [
+        'image_url' => 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=2200&q=88',
+        'image_alt' => 'Ưu đãi thời trang HHDM cho nữ và nam',
+        'eyebrow' => 'HHDM MEMBER DAYS',
+        'title' => 'ƯU ĐÃI MÙA NÀY, ĐẾN 50%',
+        'description' => 'Thêm yêu thích, bớt một chút giá cho những thiết kế được yêu thích nhất.',
+        'button_label' => 'XEM ƯU ĐÃI',
+        'target_url' => '#sale',
+    ],
+    [
+        'image_url' => 'https://images.unsplash.com/photo-1617137968427-85924c800a22?auto=format&fit=crop&w=2200&q=88',
+        'image_alt' => 'Bộ sưu tập thời trang nam HHDM',
+        'eyebrow' => 'HHDM · MENSWEAR',
+        'title' => 'PHONG ĐỘ MỖI NGÀY',
+        'description' => 'Thiết kế nam hiện đại, thoải mái và linh hoạt cho mọi hoạt động.',
+        'button_label' => 'XEM THỜI TRANG NAM',
+        'target_url' => '#menswear',
+    ],
+];
+$heroSlideCount = count($heroSlides);
 ?>
 <!doctype html>
 <html lang="vi">
@@ -37,12 +63,24 @@ $featureBanners = array_values(array_filter(
     <nav class="main-nav" id="main-nav" aria-label="Danh mục chính"><a class="sale-link" href="#new-arrivals">HÀNG MỚI</a><?php foreach ($categories as $category): ?><a href="#<?= $escape($category['slug']) ?>"><?= $escape(mb_strtoupper($category['category_name'])) ?></a><?php endforeach; ?><a href="#collection">BỘ SƯU TẬP</a><a class="sale-link" href="#sale">ƯU ĐÃI</a><a href="#stories">GÓC PHỐI ĐỒ</a><a href="#footer">LIÊN HỆ</a></nav>
   </header>
   <main id="home">
-    <?php if (!empty($banners['hero'])): $heroPoster = $banners['hero']; ?><section class="hero" aria-label="<?= $escape($heroPoster['title']) ?>"><img src="<?= $escape($heroPoster['image_url']) ?>" alt="<?= $escape($heroPoster['image_alt']) ?>" fetchpriority="high"><div class="hero-shade"></div><div class="hero-copy"><span class="hero-kicker"><?= $escape($heroPoster['eyebrow']) ?></span><h1><?= nl2br($escape($heroPoster['title'])) ?></h1><p><?= $escape($heroPoster['description']) ?></p><a class="primary-button" href="<?= $escape($heroPoster['target_url']) ?>"><?= $escape($heroPoster['button_label']) ?> <span>→</span></a></div><div class="hero-count">HHDM <i></i> 2026</div></section><?php endif; ?>
+    <section class="hero" id="hero-slideshow" aria-label="Banner nổi bật HHDM" aria-roledescription="carousel">
+      <?php foreach ($heroSlides as $slideIndex => $slide): ?>
+        <div class="hero-slide<?= $slideIndex === 0 ? ' is-active' : '' ?>" data-slide="<?= $slideIndex ?>" role="group" aria-roledescription="slide" aria-label="Slide <?= $slideIndex + 1 ?>/<?= $heroSlideCount ?>"<?= $slideIndex === 0 ? '' : ' aria-hidden="true"' ?>>
+          <img src="<?= $escape($slide['image_url']) ?>" alt="<?= $escape($slide['image_alt']) ?>"<?= $slideIndex === 0 ? ' fetchpriority="high"' : ' loading="lazy"' ?>>
+          <div class="hero-shade"></div>
+          <div class="hero-copy"><span class="hero-kicker"><?= $escape($slide['eyebrow']) ?></span><h1><?= nl2br($escape($slide['title'])) ?></h1><p><?= $escape($slide['description']) ?></p><a class="primary-button" href="<?= $escape($slide['target_url']) ?>" tabindex="<?= $slideIndex === 0 ? '0' : '-1' ?>"><?= $escape($slide['button_label']) ?> <span>→</span></a></div>
+        </div>
+      <?php endforeach; ?>
+      <button class="hero-arrow hero-prev" id="hero-prev" type="button" aria-label="Slide trước">←</button>
+      <button class="hero-arrow hero-next" id="hero-next" type="button" aria-label="Slide sau">→</button>
+      <div class="hero-dots" id="hero-dots" role="tablist" aria-label="Chọn slide"><?php foreach ($heroSlides as $slideIndex => $slide): ?><button class="hero-dot<?= $slideIndex === 0 ? ' is-active' : '' ?>" type="button" role="tab" aria-label="Tới slide <?= $slideIndex + 1 ?>" data-slide="<?= $slideIndex ?>"></button><?php endforeach; ?></div>
+      <div class="hero-count">HHDM <i></i> 2026</div>
+    </section>
     <section class="category-strip" aria-label="Danh mục nổi bật"><?php foreach ($categories as $category): ?><a href="#<?= $escape($category['slug']) ?>"><?= $escape(mb_strtoupper($category['category_name'])) ?> <span>→</span></a><?php endforeach; ?><a href="#sale">ƯU ĐÃI ĐẶC BIỆT <span>→</span></a></section>
     <section class="catalog-section" id="new-arrivals"><div class="section-heading"><div><span class="section-kicker">VỪA CÓ MẶT TẠI HHDM</span><h2>SẢN PHẨM MỚI</h2><p>Những thiết kế mới nhất, sẵn sàng đồng hành cùng bạn.</p></div><a class="all-link" href="#<?= $escape($categories[0]['slug'] ?? 'new-arrivals') ?>">XEM TẤT CẢ <span>→</span></a></div><div class="product-grid" id="new-products"><?php foreach ($newProducts as $product): ?><?php include __DIR__ . '/partials/product-card.php'; ?><?php endforeach; ?></div></section>
     <?php foreach ($categories as $category): ?><section class="catalog-section collection-section" id="<?= $escape($category['slug']) ?>"><div class="section-heading"><div><span class="section-kicker">HHDM · GỢI Ý DÀNH CHO BẠN</span><h2><?= $escape(mb_strtoupper($category['category_name'])) ?></h2><p><?= $escape($category['description'] ?: 'Thiết kế được chọn lọc dành riêng cho phong cách của bạn.') ?></p></div><a class="all-link" href="#collection">XEM TẤT CẢ <span>→</span></a></div><div class="product-grid"><?php foreach ($category['products'] as $product): ?><?php include __DIR__ . '/partials/product-card.php'; ?><?php endforeach; ?></div></section><?php endforeach; ?>
-    <?php if (!empty($banners['sale'])): $salePoster = $banners['sale']; ?><section class="sale-banner" id="sale"><img loading="lazy" src="<?= $escape($salePoster['image_url']) ?>" alt="<?= $escape($salePoster['image_alt']) ?>"><div class="sale-overlay"></div><div class="sale-copy"><span><?= $escape($salePoster['eyebrow']) ?></span><h2><?= nl2br($escape($salePoster['title'])) ?></h2><p><?= $escape($salePoster['description']) ?></p><a class="light-button" href="<?= $escape($salePoster['target_url']) ?>"><?= $escape($salePoster['button_label']) ?> <span>→</span></a></div><?php if ($salePoster['badge_text']): $badgeParts = explode('|', $salePoster['badge_text']); ?><div class="sale-stamp"><span><?= $escape($badgeParts[0] ?? '') ?></span><strong><?= $escape($badgeParts[1] ?? '') ?></strong><span><?= $escape($badgeParts[2] ?? '') ?></span></div><?php endif; ?></section><?php endif; ?>
-    <?php if ($featureBanners): ?><section class="featured-collections" id="collection"><div class="section-heading"><div><span class="section-kicker">CHỌN CẢM HỨNG CỦA BẠN</span><h2>BỘ SƯU TẬP NỔI BẬT</h2></div><a class="all-link" href="#new-arrivals">KHÁM PHÁ THÊM <span>→</span></a></div><div class="feature-grid"><?php foreach ($featureBanners as $index => $poster): ?><a class="feature-card <?= $index === 0 ? 'feature-large' : '' ?>" href="<?= $escape($poster['target_url']) ?>"><img loading="lazy" src="<?= $escape($poster['image_url']) ?>" alt="<?= $escape($poster['image_alt']) ?>"><span class="feature-number"><?= $escape($poster['eyebrow']) ?></span><strong><?= nl2br($escape($poster['title'])) ?></strong><span class="feature-description"><?= $escape($poster['description']) ?></span><i><?= $escape($poster['button_label']) ?> →</i></a><?php endforeach; ?></div></section><?php endif; ?>
+    <section class="sale-banner" id="sale"><img loading="lazy" src="https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1800&q=85" alt="Ưu đãi thời trang HHDM cho nữ và nam"><div class="sale-overlay"></div><div class="sale-copy"><span>HHDM MEMBER DAYS</span><h2>THÊM YÊU THÍCH.<br>BỚT MỘT CHÚT GIÁ.</h2><p>Ưu đãi theo mùa cho những thiết kế được yêu thích.</p><a class="light-button" href="#new-arrivals">XEM ƯU ĐÃI <span>→</span></a></div><div class="sale-stamp"><span>UP TO</span><strong>50%</strong><span>OFF</span></div></section>
+    <section class="featured-collections" id="collection"><div class="section-heading"><div><span class="section-kicker">CHỌN CẢM HỨNG CỦA BẠN</span><h2>BỘ SƯU TẬP NỔI BẬT</h2></div><a class="all-link" href="#new-arrivals">KHÁM PHÁ THÊM <span>→</span></a></div><div class="feature-grid"><a class="feature-card feature-large" href="#everyday"><img loading="lazy" src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1100&q=85" alt="Trang phục HHDM cho ngày thường"><span class="feature-number">01 / EVERYDAY</span><strong>CHUYỂN ĐỘNG CÙNG BẠN</strong><span class="feature-description">Những lựa chọn dễ mặc cho ngày thường.</span><i>KHÁM PHÁ →</i></a><a class="feature-card" href="#menswear"><img loading="lazy" src="https://images.unsplash.com/photo-1617137968427-85924c800a22?auto=format&fit=crop&w=900&q=85" alt="Bộ sưu tập thời trang nam HHDM"><span class="feature-number">02 / MENSWEAR</span><strong>PHONG ĐỘ MỖI NGÀY</strong><span class="feature-description">Thiết kế nam hiện đại, thoải mái và linh hoạt.</span><i>KHÁM PHÁ →</i></a><a class="feature-card" href="#accessories"><img loading="lazy" src="https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=900&q=85" alt="Bộ sưu tập phụ kiện HHDM"><span class="feature-number">03 / ACCESSORIES</span><strong>ĐIỂM NHẤN CỦA BẠN</strong><span class="feature-description">Phụ kiện hoàn thiện phong cách theo cách riêng.</span><i>KHÁM PHÁ →</i></a></div></section>
     <section class="story-section" id="stories"><div class="story-image"><img loading="lazy" src="https://images.unsplash.com/photo-1485230895905-ec40ba36b9bc?auto=format&fit=crop&w=1100&q=85" alt="Câu chuyện phong cách và chất liệu HHDM"></div><div class="story-copy"><span class="section-kicker">MẶC ĐẸP, SỐNG THẬT</span><h2>Phong cách của bạn<br>không cần theo khuôn mẫu.</h2><p>HHDM tạo nên những thiết kế dễ ứng dụng, chú trọng phom dáng và cảm giác khi mặc. Để mỗi ngày, bạn có thể chọn điều phù hợp với mình — không cần phải chọn giữa thoải mái và chỉn chu.</p><a class="all-link" href="#footer">CÂU CHUYỆN HHDM <span>→</span></a></div></section>
     <section class="reviews"><div class="section-heading"><div><span class="section-kicker">HHDM IN REAL LIFE</span><h2>KHÁCH HÀNG NÓI GÌ?</h2><p>Cảm ơn bạn đã để HHDM có mặt trong những ngày thường thật đẹp.</p></div><span class="review-count">03 CẢM NHẬN</span></div><div class="review-grid"><article class="review-card"><div class="stars">★★★★★</div><blockquote>“Form quần rất đẹp, mặc cả ngày vẫn thoải mái. Mình phối đi làm hay đi chơi đều hợp.”</blockquote><div class="review-person"><span class="avatar">ML</span><div><strong>Minh Anh L.</strong><small>Đã mua Quần ống rộng Miro</small></div><span class="verified">✓ Đã mua hàng</span></div></article><article class="review-card"><div class="stars">★★★★★</div><blockquote>“Vải mềm, đường may chỉn chu. Đóng gói xinh và giao hàng nhanh hơn mình nghĩ.”</blockquote><div class="review-person"><span class="avatar">TH</span><div><strong>Thu Hà N.</strong><small>Đã mua Đầm midi cổ vuông Hana</small></div><span class="verified">✓ Đã mua hàng</span></div></article><article class="review-card"><div class="stars">★★★★★</div><blockquote>“Màu ngoài đời rất dễ mặc. Bạn tư vấn size nhiệt tình, mình chọn được size vừa ngay lần đầu.”</blockquote><div class="review-person"><span class="avatar">PQ</span><div><strong>Phương Q.</strong><small>Đã mua Áo linen cổ V Luma</small></div><span class="verified">✓ Đã mua hàng</span></div></article></div></section>
     <section class="benefit-bar" aria-label="Chính sách mua hàng"><article><span class="benefit-icon">↺</span><div><strong>ĐỔI SIZE DỄ DÀNG</strong><small>Hỗ trợ đổi trong 7 ngày</small></div></article><article><span class="benefit-icon">▱</span><div><strong>GIAO HÀNG TOÀN QUỐC</strong><small>Miễn phí từ 799.000₫</small></div></article><article><span class="benefit-icon">♡</span><div><strong>ƯU ĐÃI THÀNH VIÊN</strong><small>Quyền lợi riêng cho bạn</small></div></article><article><span class="benefit-icon">☏</span><div><strong>TƯ VẤN TẬN TÂM</strong><small>Hỗ trợ mỗi ngày 9:00–21:00</small></div></article></section>
@@ -64,7 +102,18 @@ $featureBanners = array_values(array_filter(
     document.getElementById('search-form').addEventListener('submit',event=>event.preventDefault());document.getElementById('search-input').addEventListener('input',event=>{const query=event.target.value.trim().toLocaleLowerCase('vi');document.querySelectorAll('.product-card').forEach(card=>{card.hidden=query!==''&&!card.dataset.search.toLocaleLowerCase('vi').includes(query);});document.querySelectorAll('.collection-section,.catalog-section').forEach(section=>{if(section.querySelector('.product-grid'))section.hidden=query!==''&&!section.querySelector('.product-card:not([hidden])');});});
     document.querySelector('.checkout-button').addEventListener('click',()=>{hideCart();document.getElementById('new-arrivals').scrollIntoView({behavior:'smooth'});});
     document.getElementById('signup-form').addEventListener('submit',event=>{event.preventDefault();document.getElementById('signup-status').textContent='Cảm ơn bạn đã đăng ký nhận tin từ HHDM.';event.currentTarget.reset();});
-    document.querySelector('.mobile-menu').addEventListener('click',event=>{const nav=document.getElementById('main-nav');const open=nav.classList.toggle('is-open');event.currentTarget.setAttribute('aria-expanded',String(open));});renderCart();
+    document.querySelector('.mobile-menu').addEventListener('click',event=>{const nav=document.getElementById('main-nav');const open=nav.classList.toggle('is-open');event.currentTarget.setAttribute('aria-expanded',String(open));});
+    const heroSlides=[...document.querySelectorAll('.hero-slide')];const heroDots=[...document.querySelectorAll('.hero-dot')];const heroSection=document.getElementById('hero-slideshow');const HERO_DELAY=6000;let heroIndex=0;let heroTimer=null;
+    function showHeroSlide(next){if(!heroSlides.length)return;heroIndex=(next+heroSlides.length)%heroSlides.length;heroSlides.forEach((slide,i)=>{const active=i===heroIndex;slide.classList.toggle('is-active',active);slide.setAttribute('aria-hidden',String(!active));const link=slide.querySelector('.primary-button');if(link)link.tabIndex=active?0:-1;});heroDots.forEach((dot,i)=>dot.classList.toggle('is-active',i===heroIndex));}
+    function restartHeroTimer(){clearInterval(heroTimer);heroTimer=setInterval(()=>showHeroSlide(heroIndex+1),HERO_DELAY);}
+    heroDots.forEach(dot=>dot.addEventListener('click',()=>{showHeroSlide(Number(dot.dataset.slide));restartHeroTimer();}));
+    document.getElementById('hero-prev').addEventListener('click',()=>{showHeroSlide(heroIndex-1);restartHeroTimer();});
+    document.getElementById('hero-next').addEventListener('click',()=>{showHeroSlide(heroIndex+1);restartHeroTimer();});
+    heroSection.addEventListener('mouseenter',()=>clearInterval(heroTimer));
+    heroSection.addEventListener('mouseleave',restartHeroTimer);
+    document.addEventListener('visibilitychange',()=>{if(document.hidden)clearInterval(heroTimer);else restartHeroTimer();});
+    showHeroSlide(0);restartHeroTimer();
+    renderCart();
   })();
   </script>
 </body>
