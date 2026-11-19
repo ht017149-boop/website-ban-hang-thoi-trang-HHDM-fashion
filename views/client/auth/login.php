@@ -18,6 +18,7 @@ $e = static fn(string $value): string => htmlspecialchars($value, ENT_QUOTES, 'U
     <a class="brand" href="index.php">HHDM<small>FASHION</small></a>
     <a class="back" href="index.php">←&nbsp; QUAY LẠI TRANG CHỦ</a>
     <h1>Đăng nhập</h1><p class="intro">Đăng nhập để tiếp tục khám phá HHDM Fashion.</p>
+    <?php if (!empty($_GET['message'])): ?><div style="background:#edf3ea;color:#355328;padding:12px 15px;margin:0 0 18px;font-size:11px;line-height:1.7;border:1px solid #c0d8b7;" role="status"><?= $e($_GET['message']) ?></div><?php endif; ?>
     <?php if ($errors): ?><div class="errors" role="alert"><?php foreach ($errors as $error): ?><div><?= $e($error) ?></div><?php endforeach; ?></div><?php endif; ?>
     <form method="post" action="index.php?page=login" autocomplete="on">
       <input type="hidden" name="csrf_token" value="<?= $e($csrfToken) ?>">
