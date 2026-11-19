@@ -21,6 +21,7 @@ $e = static fn(string $value): string => htmlspecialchars($value, ENT_QUOTES, 'U
     <?php if ($errors): ?><div class="errors" role="alert"><?php foreach ($errors as $error): ?><div><?= $e($error) ?></div><?php endforeach; ?></div><?php endif; ?>
     <form method="post" action="index.php?page=register" autocomplete="on">
       <input type="hidden" name="csrf_token" value="<?= $e($csrfToken) ?>">
+      <input type="hidden" name="redirect" value="<?= $e($redirect ?? '') ?>">
       <div class="field"><label for="full_name">HỌ VÀ TÊN</label><input id="full_name" name="full_name" type="text" maxlength="150" autocomplete="name" value="<?= $e($old['full_name']) ?>" required></div>
       <div class="field"><label for="email">EMAIL</label><input id="email" name="email" type="email" maxlength="191" autocomplete="email" value="<?= $e($old['email']) ?>" required></div>
       <div class="field"><label for="phone">SỐ ĐIỆN THOẠI <span style="font-weight:400;color:#999">(không bắt buộc)</span></label><input id="phone" name="phone" type="tel" maxlength="20" autocomplete="tel" value="<?= $e($old['phone']) ?>"></div>
@@ -28,7 +29,7 @@ $e = static fn(string $value): string => htmlspecialchars($value, ENT_QUOTES, 'U
       <button class="submit" type="submit">Tạo tài khoản&nbsp; ↗</button>
       <p class="fine">Bằng việc đăng ký, bạn đồng ý với các điều khoản sử dụng và chính sách bảo mật của HHDM Fashion.</p>
     </form>
-    <p class="form-foot">Bạn đã có tài khoản? <a href="index.php?page=login">Đăng nhập</a></p>
+    <p class="form-foot">Bạn đã có tài khoản? <a href="index.php?page=login<?= !empty($redirect) ? '&redirect=' . urlencode($redirect) : '' ?>">Đăng nhập</a></p>
   </div></main>
 </body>
 </html>

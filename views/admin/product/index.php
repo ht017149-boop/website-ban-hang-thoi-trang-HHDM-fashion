@@ -22,7 +22,7 @@ $statusLabels = [
         <tr>
           <td class="person"><?= $escapeProduct($product['product_name']) ?><div class="muted">#<?= (int) $product['product_id'] ?></div></td>
           <td class="muted"><?= $escapeProduct($product['category_name']) ?></td>
-          <td><?php if ($product['sale_price'] !== null): ?><div class="person"><?= number_format((float) $product['sale_price'], 0, ',', '.') ?>₫</div><div class="muted"><s><?= number_format((float) $product['price'], 0, ',', '.') ?>₫</s></div><?php else: ?><span class="person"><?= number_format((float) $product['price'], 0, ',', '.') ?>₫</span><?php endif; ?></td>
+          <td><?php if ($product['sale_price'] !== null): ?><div class="person"><?= number_format((float) $product['sale_price'], 2, ',', '.') ?>₫</div><div class="muted"><s><?= number_format((float) $product['price'], 2, ',', '.') ?>₫</s></div><?php else: ?><span class="person"><?= number_format((float) $product['price'], 2, ',', '.') ?>₫</span><?php endif; ?></td>
           <td><?= number_format((int) $product['stock_quantity']) ?></td>
           <td class="muted"><?= $escapeProduct($product['sizes'] ?: '—') ?></td>
           <td><span class="badge <?= $product['status'] === 'active' ? 'badge-admin' : 'badge-customer' ?>"><?= $escapeProduct($statusLabels[$product['status']] ?? $product['status']) ?></span></td>

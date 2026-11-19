@@ -18,14 +18,16 @@ $e = static fn(string $value): string => htmlspecialchars($value, ENT_QUOTES, 'U
     <a class="brand" href="index.php">HHDM<small>FASHION</small></a>
     <a class="back" href="index.php">←&nbsp; QUAY LẠI TRANG CHỦ</a>
     <h1>Đăng nhập</h1><p class="intro">Đăng nhập để tiếp tục khám phá HHDM Fashion.</p>
+    <?php if (!empty($message)): ?><div style="background:#edf3ea;color:#355328;padding:12px 15px;margin:0 0 18px;font-size:11px;line-height:1.7;border:1px solid #c0d8b7;" role="status"><?= $e($message) ?></div><?php endif; ?>
     <?php if ($errors): ?><div class="errors" role="alert"><?php foreach ($errors as $error): ?><div><?= $e($error) ?></div><?php endforeach; ?></div><?php endif; ?>
     <form method="post" action="index.php?page=login" autocomplete="on">
       <input type="hidden" name="csrf_token" value="<?= $e($csrfToken) ?>">
+      <input type="hidden" name="redirect" value="<?= $e($redirect ?? '') ?>">
       <div class="field"><label for="email">EMAIL</label><input id="email" name="email" type="email" maxlength="191" autocomplete="email" value="<?= $e($email) ?>" required autofocus></div>
       <div class="field"><label for="password">MẬT KHẨU</label><input id="password" name="password" type="password" autocomplete="current-password" required></div>
       <button class="submit" type="submit">Đăng nhập&nbsp; ↗</button>
     </form>
-    <p class="form-foot">Chưa có tài khoản? <a href="index.php?page=register">Tạo tài khoản</a></p>
+    <p class="form-foot">Chưa có tài khoản? <a href="index.php?page=register<?= !empty($redirect) ? '&redirect=' . urlencode($redirect) : '' ?>">Tạo tài khoản</a></p>
     <p class="fine">Mật khẩu của bạn được bảo vệ an toàn.</p>
   </div></main>
 </body>
