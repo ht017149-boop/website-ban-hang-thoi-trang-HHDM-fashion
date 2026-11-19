@@ -19,7 +19,6 @@ class AuthController
 
         $errors = [];
         $old = ['full_name' => '', 'email' => '', 'phone' => ''];
-        $redirect = trim((string) ($_POST['redirect'] ?? ($_GET['redirect'] ?? '')));
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $old = [
@@ -63,10 +62,6 @@ class AuthController
                         'email' => mb_strtolower($old['email']),
                         'role' => 'customer',
                     ];
-                    if ($redirect !== '' && !preg_match('/^[a-z]+:\/\//i', $redirect)) {
-                        header('Location: ' . $redirect);
-                        exit;
-                    }
                     $this->redirectHome();
                 } catch (PDOException $exception) {
                     if ($exception->getCode() === '23000') {
@@ -90,9 +85,6 @@ class AuthController
 
         $errors = [];
         $email = '';
-        $redirect = trim((string) ($_POST['redirect'] ?? ($_GET['redirect'] ?? '')));
-        $message = trim((string) ($_GET['message'] ?? ''));
-
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $email = trim((string) ($_POST['email'] ?? ''));
             $password = (string) ($_POST['password'] ?? '');
@@ -114,10 +106,6 @@ class AuthController
                         'email' => $user['email'],
                         'role' => $user['role'],
                     ];
-                    if ($redirect !== '' && !preg_match('/^[a-z]+:\/\//i', $redirect)) {
-                        header('Location: ' . $redirect);
-                        exit;
-                    }
                     $this->redirectHome();
                 }
             }
