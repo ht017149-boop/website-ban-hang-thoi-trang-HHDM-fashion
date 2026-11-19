@@ -30,8 +30,19 @@ class AdminController
             if (in_array($page, ['admin-categories', 'admin-category-create', 'admin-category-edit'], true)) {
                 $this->handleCategoryAction();
             }
+            if (in_array($page, ['admin-comments', 'admin-comment-show'], true)) {
+                $this->handleCommentAction();
+            }
         }
 
+        if ($page === 'admin-comment-show') {
+            $this->showComment();
+            return;
+        }
+        if ($page === 'admin-comments') {
+            $this->showComments();
+            return;
+        }
         if ($page === 'admin-category-create') {
             $this->showCategoryCreate();
             return;
@@ -158,6 +169,61 @@ class AdminController
         $csrfToken = $this->csrfToken();
         $contentView = PATH_VIEW_ADMIN . 'category/index.php';
         require PATH_VIEW_MAIN_ADMIN;
+    }
+
+    private function showComments(): void
+    {
+        $commentList = $this->products->getAdminComments();
+        $currentPage = 'comments';
+        $flash = $this->takeFlash();
+        $csrfToken = $this->csrfToken();
+        $contentView = PATH_VIEW_ADMIN . 'comment/index.php';
+        require PATH_VIEW_MAIN_ADMIN;
+    }
+
+    private function showComment(): void
+    {
+        $commentId = (int) ($_GET['id'] ?? 0);
+        $comment = $commentId > 0 ? $this->products->findAdminComment($commentId) : null;
+        if ($commentId < 1 || !$comment) {
+            $_SESSION['admin_flash'] = 'Không tìm thấy đánh giá cần xem.';
+            header('Location: index.php?page=admin-comments');
+            exit;
+        }
+        $currentPage = 'comments';
+        $flash = $this->takeFlash();
+        $csrfToken = $this->csrfToken();
+        $contentView = PATH_VIEW_ADMIN . 'comment/show.php';
+        require PATH_VIEW_MAIN_ADMIN;
+    }
+
+    private function handleCommentAction(): void
+    {
+        if (!$this->validCsrfToken()) {
+            http_response_code(400);
+            exit('Yêu cầu không hợp lệ hoặc phiên làm việc đã hết hạn.');
+        }
+
+        $action = (string) ($_POST['action'] ?? '');
+        if ($action === 'delete_comment') {
+            $this->deleteComment();
+        } else {
+            http_response_code(400);
+            exit('Thao tác đánh giá không hợp lệ.');
+        }
+    }
+
+    private function deleteComment(): void
+    {
+        $commentId = (int) ($_POST['comment_id'] ?? 0);
+        if ($commentId < 1 || !$this->products->findAdminComment($commentId)) {
+            $_SESSION['admin_flash'] = 'Không tìm thấy đánh giá cần gỡ.';
+            $this->redirectToComments();
+        }
+
+        $this->products->deleteAdminComment($commentId);
+        $_SESSION['admin_flash'] = 'Đã gỡ đánh giá khỏi database.';
+        $this->redirectToComments();
     }
 
     private function showCategoryCreate(): void
@@ -769,6 +835,12 @@ class AdminController
             exit;
         }
         header('Location: index.php?page=admin-category-create');
+        exit;
+    }
+
+    private function redirectToComments(): void
+    {
+        header('Location: index.php?page=admin-comments');
         exit;
     }
 

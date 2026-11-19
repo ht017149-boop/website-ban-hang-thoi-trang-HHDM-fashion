@@ -293,4 +293,39 @@ class ProductModel extends BaseModel
 
         return $statement->fetchAll();
     }
+
+    public function getAdminComments(): array
+    {
+        return $this->pdo->query(
+            'SELECT cm.comment_id, cm.product_id, cm.content, cm.rating, cm.created_at,
+                    u.full_name, p.product_name
+             FROM comments cm
+             INNER JOIN users u ON u.user_id = cm.user_id
+             INNER JOIN products p ON p.product_id = cm.product_id
+             ORDER BY cm.created_at DESC, cm.comment_id DESC'
+        )->fetchAll();
+    }
+
+    public function findAdminComment(int $commentId): ?array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT cm.comment_id, cm.product_id, cm.content, cm.rating, cm.created_at,
+                    u.full_name, u.email, p.product_name, p.image_url
+             FROM comments cm
+             INNER JOIN users u ON u.user_id = cm.user_id
+             INNER JOIN products p ON p.product_id = cm.product_id
+             WHERE cm.comment_id = :comment_id
+             LIMIT 1'
+        );
+        $statement->execute(['comment_id' => $commentId]);
+        $comment = $statement->fetch();
+
+        return $comment !== false ? $comment : null;
+    }
+
+    public function deleteAdminComment(int $commentId): void
+    {
+        $statement = $this->pdo->prepare('DELETE FROM comments WHERE comment_id = :comment_id');
+        $statement->execute(['comment_id' => $commentId]);
+    }
 }
