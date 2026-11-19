@@ -20,7 +20,7 @@ $hasDiscount = $product['old'] !== null;
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/home.css">
+  <link rel="stylesheet" href="assets/css/home.css?v=20261119-payment">
   <style>
     .detail-main { max-width: 1180px; margin: 0 auto; padding: 38px 22px 70px; }
     .breadcrumb { color: #999b95; font-size: 10px; letter-spacing: .07em; margin-bottom: 22px; }
@@ -59,7 +59,7 @@ $hasDiscount = $product['old'] !== null;
     @media (max-width: 860px) { .detail-layout { grid-template-columns: 1fr; } }
   </style>
 </head>
-<body>
+<body data-authenticated="<?= $user ? 'true' : 'false' ?>">
   <div class="announcement"><span>GIAO HÀNG MIỄN PHÍ</span> cho đơn hàng từ 799.000₫ <b>✦</b> Ưu đãi thành viên mới đến 15%</div>
   <header class="site-header">
     <div class="header-main">
@@ -88,8 +88,8 @@ $hasDiscount = $product['old'] !== null;
           <p class="no-comment">Sản phẩm hiện chưa có kích cỡ khả dụng.</p>
         <?php endif; ?>
         <div class="detail-actions">
-          <button class="cart-button" type="button" id="add-to-cart" data-name="<?= $escape($product['product_name']) ?>" data-code="<?= $escape($product['code']) ?>" data-price="<?= (int) $product['price'] ?>" data-image="<?= $escape($productImageUrl) ?>">THÊM VÀO GIỎ</button>
-          <button class="buy-button" type="button" id="buy-now" data-name="<?= $escape($product['product_name']) ?>" data-code="<?= $escape($product['code']) ?>" data-price="<?= (int) $product['price'] ?>" data-image="<?= $escape($productImageUrl) ?>">MUA NGAY</button>
+          <button class="cart-button" type="button" id="add-to-cart" data-name="<?= $escape($product['product_name']) ?>" data-code="<?= $escape($product['code']) ?>" data-price="<?= (int) $product['price'] ?>" data-image="<?= $escape($productImageUrl) ?>"><?= $user ? 'THÊM VÀO GIỎ' : 'ĐĂNG NHẬP ĐỂ MUA' ?></button>
+          <button class="buy-button" type="button" id="buy-now" data-name="<?= $escape($product['product_name']) ?>" data-code="<?= $escape($product['code']) ?>" data-price="<?= (int) $product['price'] ?>" data-image="<?= $escape($productImageUrl) ?>"><?= $user ? 'MUA NGAY' : 'ĐĂNG NHẬP ĐỂ MUA' ?></button>
         </div>
         <span class="detail-section-label">MÔ TẢ SẢN PHẨM</span>
         <p class="detail-desc"><?= $escape($product['description'] !== null && $product['description'] !== '' ? $product['description'] : 'Sản phẩm chính hãng HHDM Fashion, chất liệu thoáng mát, phom dáng dễ mặc.') ?></p>
@@ -113,11 +113,12 @@ $hasDiscount = $product['old'] !== null;
       <?php endif; ?>
     </section>
   </main>
+  <?php include __DIR__ . '/partials/payment-modal.php'; ?>
   <aside class="cart-drawer" id="cart-drawer" aria-hidden="true"><div class="cart-head"><div><span class="section-kicker">HHDM SHOPPING BAG</span><h2>Giỏ hàng <span id="drawer-count">(0)</span></h2></div><button id="cart-close" type="button" aria-label="Đóng giỏ hàng">×</button></div><div class="cart-items" id="cart-items"><p class="empty-cart">Giỏ hàng của bạn đang trống.<br>Thêm món đồ bạn yêu thích nhé!</p></div><div class="cart-summary"><div><span>Tạm tính</span><strong id="cart-subtotal">0₫</strong></div><small>Phí vận chuyển sẽ được tính ở bước tiếp theo.</small><button class="checkout-button" type="button" disabled>TIẾP TỤC MUA SẮM</button></div></aside><div class="drawer-backdrop" id="drawer-backdrop"></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script>
   (function(){
-    const cart=[];const drawer=document.getElementById('cart-drawer');const backdrop=document.getElementById('drawer-backdrop');const money=n=>new Intl.NumberFormat('vi-VN').format(n)+'₫';
+    const cart=[];const isAuthenticated=document.body.dataset.authenticated==='true';const drawer=document.getElementById('cart-drawer');const backdrop=document.getElementById('drawer-backdrop');const money=n=>new Intl.NumberFormat('vi-VN').format(n)+'₫';
     let selectedSize=null;const sizeWrap=document.getElementById('detail-sizes');const hint=document.getElementById('size-hint');
     function showCart(){drawer.classList.add('is-open');backdrop.classList.add('is-open');drawer.setAttribute('aria-hidden','false');document.body.classList.add('drawer-open');}
     function hideCart(){drawer.classList.remove('is-open');backdrop.classList.remove('is-open');drawer.setAttribute('aria-hidden','true');document.body.classList.remove('drawer-open');}
@@ -125,7 +126,7 @@ $hasDiscount = $product['old'] !== null;
     document.getElementById('cart-trigger').addEventListener('click',showCart);document.getElementById('cart-close').addEventListener('click',hideCart);backdrop.addEventListener('click',hideCart);document.addEventListener('keydown',e=>{if(e.key==='Escape')hideCart();});
     let toastTimer;function toast(message){const el=document.getElementById('toast');el.textContent=message;el.classList.add('is-visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('is-visible'),2400);}
     function requireSize(){if(!selectedSize){if(hint)hint.classList.add('is-visible');toast('Vui lòng chọn size trước khi tiếp tục.');return false;}if(hint)hint.classList.remove('is-visible');return true;}
-    function addToCart(openAfter){if(!requireSize())return;const button=openAfter?document.getElementById('buy-now'):document.getElementById('add-to-cart');const key=button.dataset.code+'-'+selectedSize;const existing=cart.find(item=>item.key===key);if(existing){existing.quantity++;}else{cart.push({key,name:button.dataset.name,code:button.dataset.code,price:Number(button.dataset.price),size:selectedSize,image:button.dataset.image,quantity:1});}renderCart();if(openAfter){showCart();}else{toast('Đã thêm '+button.dataset.name+' (size '+selectedSize+') vào giỏ hàng.');}}
+    function addToCart(openAfter){if(!isAuthenticated){window.location.href='index.php?page=login';return;}if(!requireSize())return;const button=openAfter?document.getElementById('buy-now'):document.getElementById('add-to-cart');if(openAfter){window.HHDMPayment.open({items:[{name:button.dataset.name,size:selectedSize,price:Number(button.dataset.price),quantity:1}],amount:Number(button.dataset.price)});return;}const key=button.dataset.code+'-'+selectedSize;const existing=cart.find(item=>item.key===key);if(existing){existing.quantity++;}else{cart.push({key,name:button.dataset.name,code:button.dataset.code,price:Number(button.dataset.price),size:selectedSize,image:button.dataset.image,quantity:1});}renderCart();toast('Đã thêm '+button.dataset.name+' (size '+selectedSize+') vào giỏ hàng.');}
     if(sizeWrap){sizeWrap.addEventListener('click',event=>{const option=event.target.closest('.detail-size');if(!option)return;sizeWrap.querySelectorAll('.detail-size').forEach(el=>el.classList.remove('is-selected'));option.classList.add('is-selected');selectedSize=option.dataset.size;if(hint)hint.classList.remove('is-visible');});}
     document.getElementById('add-to-cart').addEventListener('click',()=>addToCart(false));
     document.getElementById('buy-now').addEventListener('click',()=>addToCart(true));

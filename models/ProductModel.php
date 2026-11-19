@@ -209,6 +209,7 @@ class ProductModel extends BaseModel
                     ELSE 'Được yêu thích'
                 END AS tag,
                 c.slug AS category_slug,
+                c.category_name AS category_name,
                 p.image_url AS image,
                 COALESCE(NULLIF(p.description, ''), p.product_name) AS alt,
                 GROUP_CONCAT(DISTINCT NULLIF(pv.size, '') ORDER BY FIELD(pv.size, 'XS', 'S', 'M', 'L', 'XL', 'XXL'), pv.size SEPARATOR ',') AS sizes,
@@ -220,7 +221,7 @@ class ProductModel extends BaseModel
                 ON pv.product_id = p.product_id AND pv.status = 'active'
              WHERE p.status = 'active' AND c.status = 'active'
              GROUP BY p.product_id, p.product_name, p.price, p.sale_price,
-                p.created_at, c.slug, p.image_url, p.description
+                p.created_at, c.slug, c.category_name, p.image_url, p.description
              ORDER BY p.created_at DESC, p.product_id DESC"
         );
         $products = $productsStatement->fetchAll();
