@@ -109,13 +109,20 @@ class AdminController
             'description' => '',
             'price' => '',
             'sale_price' => '',
-            'stock_quantity' => '0',
             'image_url' => '',
             'status' => 'active',
-            'sizes' => 'S, M, L, XL',
+            'variants' => [
+                ['size' => 'S', 'stock_quantity' => '0', 'additional_price' => '0.00'],
+                ['size' => 'M', 'stock_quantity' => '0', 'additional_price' => '0.00'],
+                ['size' => 'L', 'stock_quantity' => '0', 'additional_price' => '0.00'],
+                ['size' => 'XL', 'stock_quantity' => '0', 'additional_price' => '0.00'],
+            ],
         ];
         unset($_SESSION['product_form']);
         $productForm['product_id'] = (int) ($productForm['product_id'] ?? ($productToEdit['product_id'] ?? 0));
+        if (empty($productForm['variants']) || !is_array($productForm['variants'])) {
+            $productForm['variants'] = [['size' => '', 'stock_quantity' => '0', 'additional_price' => '0.00']];
+        }
         $productErrors = $_SESSION['product_errors'] ?? [];
         unset($_SESSION['product_errors']);
         $categories = $this->products->getAdminCategories();
@@ -355,13 +362,14 @@ class AdminController
             'description' => trim((string) ($_POST['description'] ?? '')),
             'price' => trim((string) ($_POST['price'] ?? '')),
             'sale_price' => trim((string) ($_POST['sale_price'] ?? '')),
-            'stock_quantity' => trim((string) ($_POST['stock_quantity'] ?? '')),
             'image_url' => trim((string) ($_POST['image_url'] ?? '')),
             'status' => (string) ($_POST['status'] ?? ''),
-            'sizes' => trim((string) ($_POST['sizes'] ?? '')),
         ];
+        $submittedVariants = $_POST['variants'] ?? [];
+        $form['variants'] = [];
         $errors = [];
         $pricePattern = '/^\d{1,10}(?:\.\d{1,2})?$/';
+        $additionalPricePattern = '/^-?\d{1,10}(?:\.\d{1,2})?$/';
 
         if ($productId > 0 && !$existingProduct) {
             $errors[] = 'Không tìm thấy sản phẩm cần chỉnh sửa.';
@@ -381,9 +389,6 @@ class AdminController
             || (float) $form['sale_price'] >= (float) $form['price']
         )) {
             $errors[] = 'Giá khuyến mãi phải lớn hơn 0 và thấp hơn giá gốc.';
-        }
-        if (!ctype_digit($form['stock_quantity']) || (float) $form['stock_quantity'] > 4294967295) {
-            $errors[] = 'Số lượng tồn kho phải là số nguyên không âm hợp lệ.';
         }
         if (!in_array($form['status'], ['active', 'inactive', 'out_of_stock'], true)) {
             $errors[] = 'Trạng thái sản phẩm không hợp lệ.';
@@ -406,24 +411,62 @@ class AdminController
             $errors[] = $this->productUploadErrorMessage($uploadError);
         }
 
-        $sizes = array_values(array_filter(array_map(
-            'trim',
-            explode(',', $form['sizes'])
-        ), static fn(string $size): bool => $size !== ''));
-        $uniqueSizes = [];
-        foreach ($sizes as $size) {
-            $uniqueSizes[mb_strtolower($size)] = $size;
+        if (!is_array($submittedVariants) || !$submittedVariants || count($submittedVariants) > 20) {
+            $errors[] = 'Sản phẩm cần ít nhất một kích cỡ và tối đa 20 kích cỡ.';
+            $submittedVariants = [];
         }
-        $sizes = array_values($uniqueSizes);
-        if (!$sizes || count($sizes) > 20) {
-            $errors[] = 'Nhập ít nhất một size và không quá 20 size, phân cách bằng dấu phẩy.';
-        } else {
-            foreach ($sizes as $size) {
-                if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9 -]{0,29}$/', $size)) {
-                    $errors[] = 'Size chỉ được chứa chữ cái không dấu, chữ số, dấu cách hoặc dấu gạch ngang.';
-                    break;
+
+        $variants = [];
+        $seenSizes = [];
+        $totalStock = 0;
+        foreach ($submittedVariants as $submittedVariant) {
+            if (!is_array($submittedVariant)) {
+                $errors[] = 'Thông tin kích cỡ không hợp lệ.';
+                continue;
+            }
+
+            $variant = [
+                'size' => trim((string) ($submittedVariant['size'] ?? '')),
+                'stock_quantity' => trim((string) ($submittedVariant['stock_quantity'] ?? '')),
+                'additional_price' => trim((string) ($submittedVariant['additional_price'] ?? '0')),
+            ];
+            $form['variants'][] = $variant;
+            if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9 -]{0,29}$/', $variant['size'])) {
+                $errors[] = 'Tên kích cỡ chỉ được chứa chữ cái không dấu, chữ số, dấu cách hoặc dấu gạch ngang.';
+            } elseif (isset($seenSizes[mb_strtolower($variant['size'])])) {
+                $errors[] = 'Không được nhập trùng tên kích cỡ.';
+            } else {
+                $seenSizes[mb_strtolower($variant['size'])] = true;
+            }
+
+            if (!ctype_digit($variant['stock_quantity']) || (float) $variant['stock_quantity'] > 4294967295) {
+                $errors[] = 'Tồn kho mỗi kích cỡ phải là số nguyên từ 0 đến 4.294.967.295.';
+            } else {
+                $totalStock += (int) $variant['stock_quantity'];
+            }
+
+            if (!preg_match($additionalPricePattern, $variant['additional_price'])) {
+                $errors[] = 'Giá điều chỉnh mỗi kích cỡ phải đúng định dạng DECIMAL(12,2), ví dụ 0.00 hoặc 15000.00.';
+            } elseif (preg_match($pricePattern, $form['price'])) {
+                $sizePrice = (float) $form['price'] + (float) $variant['additional_price'];
+                if ($sizePrice <= 0 || $sizePrice > 9999999999.99) {
+                    $errors[] = 'Giá theo kích cỡ phải nằm trong giới hạn DECIMAL(12,2) và lớn hơn 0.';
                 }
             }
+            if (
+                $form['sale_price'] !== ''
+                && preg_match($pricePattern, $form['sale_price'])
+                && preg_match($additionalPricePattern, $variant['additional_price'])
+            ) {
+                $saleSizePrice = (float) $form['sale_price'] + (float) $variant['additional_price'];
+                if ($saleSizePrice <= 0 || $saleSizePrice > 9999999999.99) {
+                    $errors[] = 'Giá khuyến mãi theo kích cỡ phải nằm trong giới hạn DECIMAL(12,2) và lớn hơn 0.';
+                }
+            }
+            $variants[] = $variant;
+        }
+        if ($totalStock > 4294967295) {
+            $errors[] = 'Tổng tồn kho vượt giới hạn của database.';
         }
 
         if ($errors) {
@@ -449,12 +492,12 @@ class AdminController
             'description' => $form['description'] !== '' ? $form['description'] : null,
             'price' => $form['price'],
             'sale_price' => $form['sale_price'] !== '' ? $form['sale_price'] : null,
-            'stock_quantity' => (int) $form['stock_quantity'],
+            'stock_quantity' => $totalStock,
             'image_url' => $uploadedImagePath ?? ($form['image_url'] !== '' ? $form['image_url'] : null),
             'status' => $form['status'],
         ];
         try {
-            $this->products->saveAdminProduct($product, $sizes, $productId > 0 ? $productId : null);
+            $this->products->saveAdminProduct($product, $variants, $productId > 0 ? $productId : null);
         } catch (Throwable $exception) {
             if ($uploadedImagePath !== null) {
                 $this->removeUploadedProductImage($uploadedImagePath);
