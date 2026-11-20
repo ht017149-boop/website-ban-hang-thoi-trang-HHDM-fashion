@@ -113,6 +113,7 @@ class AdminController
 
     private function renderProductForm(?array $productToEdit): void
     {
+        $hasSubmittedProductForm = isset($_SESSION['product_form']);
         $productForm = $_SESSION['product_form'] ?? $productToEdit ?? [
             'product_id' => 0,
             'category_id' => '',
@@ -129,6 +130,18 @@ class AdminController
                 ['size' => 'XL', 'stock_quantity' => '0', 'additional_price' => '0.00'],
             ],
         ];
+        if (!$hasSubmittedProductForm && $productToEdit !== null) {
+            $baseVariantPrice = (float) ($productToEdit['sale_price'] ?? $productToEdit['price']);
+            foreach ($productForm['variants'] as &$variant) {
+                $variant['additional_price'] = number_format(
+                    $baseVariantPrice + (float) $variant['additional_price'],
+                    2,
+                    '.',
+                    ''
+                );
+            }
+            unset($variant);
+        }
         unset($_SESSION['product_form']);
         $productForm['product_id'] = (int) ($productForm['product_id'] ?? ($productToEdit['product_id'] ?? 0));
         if (empty($productForm['variants']) || !is_array($productForm['variants'])) {
@@ -435,7 +448,11 @@ class AdminController
         $form['variants'] = [];
         $errors = [];
         $pricePattern = '/^\d{1,10}(?:\.\d{1,2})?$/';
-        $additionalPricePattern = '/^-?\d{1,10}(?:\.\d{1,2})?$/';
+        $baseVariantPrice = (float) (
+            $form['sale_price'] !== '' && preg_match($pricePattern, $form['sale_price'])
+                ? $form['sale_price']
+                : $form['price']
+        );
 
         if ($productId > 0 && !$existingProduct) {
             $errors[] = 'Không tìm thấy sản phẩm cần chỉnh sửa.';
@@ -511,25 +528,23 @@ class AdminController
                 $totalStock += (int) $variant['stock_quantity'];
             }
 
-            if (!preg_match($additionalPricePattern, $variant['additional_price'])) {
-                $errors[] = 'Giá điều chỉnh mỗi kích cỡ phải đúng định dạng DECIMAL(12,2), ví dụ 0.00 hoặc 15000.00.';
-            } elseif (preg_match($pricePattern, $form['price'])) {
-                $sizePrice = (float) $form['price'] + (float) $variant['additional_price'];
+            if (!preg_match($pricePattern, $variant['additional_price'])) {
+                $errors[] = 'Giá theo kích cỡ phải là số không âm, có tối đa 2 chữ số thập phân; nhập 0 để dùng giá sản phẩm.';
+                $sizePrice = 0.0;
+            } else {
+                $sizePrice = (float) $variant['additional_price'];
+                if ($sizePrice === 0.0) {
+                    $sizePrice = $baseVariantPrice;
+                }
                 if ($sizePrice <= 0 || $sizePrice > 9999999999.99) {
-                    $errors[] = 'Giá theo kích cỡ phải nằm trong giới hạn DECIMAL(12,2) và lớn hơn 0.';
+                    $errors[] = 'Giá theo kích cỡ phải lớn hơn 0 và nằm trong giới hạn DECIMAL(12,2).';
                 }
             }
-            if (
-                $form['sale_price'] !== ''
-                && preg_match($pricePattern, $form['sale_price'])
-                && preg_match($additionalPricePattern, $variant['additional_price'])
-            ) {
-                $saleSizePrice = (float) $form['sale_price'] + (float) $variant['additional_price'];
-                if ($saleSizePrice <= 0 || $saleSizePrice > 9999999999.99) {
-                    $errors[] = 'Giá khuyến mãi theo kích cỡ phải nằm trong giới hạn DECIMAL(12,2) và lớn hơn 0.';
-                }
-            }
-            $variants[] = $variant;
+            $variants[] = [
+                'size' => $variant['size'],
+                'stock_quantity' => $variant['stock_quantity'],
+                'additional_price' => number_format($sizePrice - $baseVariantPrice, 2, '.', ''),
+            ];
         }
         if ($totalStock > 4294967295) {
             $errors[] = 'Tổng tồn kho vượt giới hạn của database.';
