@@ -1,25 +1,25 @@
 <?php
 
-require_once PATH_CONTROLLER_CLIENT . 'HomeController.php';
-require_once PATH_CONTROLLER_CLIENT . 'AuthController.php';
+require_once PATH_CONTROLLER_CLIENT . "HomeController.php";
+require_once PATH_CONTROLLER_CLIENT . "AuthController.php";
 
 return static function (): void {
-    $page = (string) ($_GET['page'] ?? 'home');
+    $page = (string) ($_GET["page"] ?? "home");
 
     switch ($page) {
-        case 'register':
+        case "register":
             (new AuthController())->register();
             return;
-        case 'login':
+        case "login":
             (new AuthController())->login();
             return;
-        case 'logout':
+        case "logout":
             (new AuthController())->logout();
             return;
-        case 'product_detail':
+        case "product_detail":
             (new HomeController())->detail();
             return;
-        case 'home':
+        case "home":
         default:
             (new HomeController())->index();
     }

@@ -1,6 +1,5 @@
 <?php
-$e = static fn(string $value): string => htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
-?>
+$e = static fn(string $value): string => htmlspecialchars($value, ENT_QUOTES, "UTF-8"); ?>
 <!doctype html>
 <html lang="vi">
 <head>
@@ -18,10 +17,14 @@ $e = static fn(string $value): string => htmlspecialchars($value, ENT_QUOTES, 'U
     <a class="brand" href="index.php">HHDM<small>FASHION</small></a>
     <a class="back" href="index.php">←&nbsp; QUAY LẠI TRANG CHỦ</a>
     <h1>Đăng nhập</h1><p class="intro">Đăng nhập để tiếp tục khám phá HHDM Fashion.</p>
-    <?php if ($errors): ?><div class="errors" role="alert"><?php foreach ($errors as $error): ?><div><?= $e($error) ?></div><?php endforeach; ?></div><?php endif; ?>
+    <?php if ($errors): ?><div class="errors" role="alert"><?php foreach ($errors as $error): ?><div><?= $e(
+    $error,
+) ?></div><?php endforeach; ?></div><?php endif; ?>
     <form method="post" action="index.php?page=login" autocomplete="on">
       <input type="hidden" name="csrf_token" value="<?= $e($csrfToken) ?>">
-      <div class="field"><label for="email">EMAIL</label><input id="email" name="email" type="email" maxlength="191" autocomplete="email" value="<?= $e($email) ?>" required autofocus></div>
+      <div class="field"><label for="email">EMAIL</label><input id="email" name="email" type="email" maxlength="191" autocomplete="email" value="<?= $e(
+          $email,
+      ) ?>" required autofocus></div>
       <div class="field"><label for="password">MẬT KHẨU</label><input id="password" name="password" type="password" autocomplete="current-password" required></div>
       <button class="submit" type="submit">Đăng nhập&nbsp; ↗</button>
     </form>

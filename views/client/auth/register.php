@@ -1,6 +1,5 @@
 <?php
-$e = static fn(string $value): string => htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
-?>
+$e = static fn(string $value): string => htmlspecialchars($value, ENT_QUOTES, "UTF-8"); ?>
 <!doctype html>
 <html lang="vi">
 <head>
@@ -18,12 +17,20 @@ $e = static fn(string $value): string => htmlspecialchars($value, ENT_QUOTES, 'U
     <a class="brand" href="index.php">HHDM<small>FASHION</small></a>
     <a class="back" href="index.php">←&nbsp; QUAY LẠI TRANG CHỦ</a>
     <h1>Tạo tài khoản</h1><p class="intro">Tham gia HHDM để cập nhật bộ sưu tập và lưu lại phong cách yêu thích.</p>
-    <?php if ($errors): ?><div class="errors" role="alert"><?php foreach ($errors as $error): ?><div><?= $e($error) ?></div><?php endforeach; ?></div><?php endif; ?>
+    <?php if ($errors): ?><div class="errors" role="alert"><?php foreach ($errors as $error): ?><div><?= $e(
+    $error,
+) ?></div><?php endforeach; ?></div><?php endif; ?>
     <form method="post" action="index.php?page=register" autocomplete="on">
       <input type="hidden" name="csrf_token" value="<?= $e($csrfToken) ?>">
-      <div class="field"><label for="full_name">HỌ VÀ TÊN</label><input id="full_name" name="full_name" type="text" maxlength="150" autocomplete="name" value="<?= $e($old['full_name']) ?>" required></div>
-      <div class="field"><label for="email">EMAIL</label><input id="email" name="email" type="email" maxlength="191" autocomplete="email" value="<?= $e($old['email']) ?>" required></div>
-      <div class="field"><label for="phone">SỐ ĐIỆN THOẠI <span style="font-weight:400;color:#999">(không bắt buộc)</span></label><input id="phone" name="phone" type="tel" maxlength="20" autocomplete="tel" value="<?= $e($old['phone']) ?>"></div>
+      <div class="field"><label for="full_name">HỌ VÀ TÊN</label><input id="full_name" name="full_name" type="text" maxlength="150" autocomplete="name" value="<?= $e(
+          $old["full_name"],
+      ) ?>" required></div>
+      <div class="field"><label for="email">EMAIL</label><input id="email" name="email" type="email" maxlength="191" autocomplete="email" value="<?= $e(
+          $old["email"],
+      ) ?>" required></div>
+      <div class="field"><label for="phone">SỐ ĐIỆN THOẠI <span style="font-weight:400;color:#999">(không bắt buộc)</span></label><input id="phone" name="phone" type="tel" maxlength="20" autocomplete="tel" value="<?= $e(
+          $old["phone"],
+      ) ?>"></div>
       <div class="grid"><div class="field"><label for="password">MẬT KHẨU</label><input id="password" name="password" type="password" minlength="8" autocomplete="new-password" required></div><div class="field"><label for="password_confirmation">NHẬP LẠI MẬT KHẨU</label><input id="password_confirmation" name="password_confirmation" type="password" minlength="8" autocomplete="new-password" required></div></div>
       <button class="submit" type="submit">Tạo tài khoản&nbsp; ↗</button>
       <p class="fine">Bằng việc đăng ký, bạn đồng ý với các điều khoản sử dụng và chính sách bảo mật của HHDM Fashion.</p>

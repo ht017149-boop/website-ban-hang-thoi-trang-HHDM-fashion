@@ -1,6 +1,8 @@
 <div class="payment-modal" id="payment-modal" aria-hidden="true" hidden>
   <div class="payment-backdrop" data-payment-close></div>
-  <section class="payment-dialog" role="dialog" aria-modal="true" aria-labelledby="payment-title" data-bank="<?= $escape(PAYMENT_BANK_ID) ?>" data-account="<?= $escape(PAYMENT_ACCOUNT_NO) ?>">
+  <section class="payment-dialog" role="dialog" aria-modal="true" aria-labelledby="payment-title" data-bank="<?= $escape(
+      PAYMENT_BANK_ID,
+  ) ?>" data-account="<?= $escape(PAYMENT_ACCOUNT_NO) ?>">
     <button class="payment-close" type="button" aria-label="Đóng thanh toán" data-payment-close>×</button>
     <div class="payment-copy">
       <span class="section-kicker">HHDM · THANH TOÁN AN TOÀN</span>
