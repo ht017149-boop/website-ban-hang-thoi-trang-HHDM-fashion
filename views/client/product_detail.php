@@ -117,7 +117,29 @@ $hasDiscount = $product['old'] !== null;
       <?php endif; ?>
     </section>
   </main>
-  <aside class="cart-drawer" id="cart-drawer" aria-hidden="true"><div class="cart-head"><div><span class="section-kicker">HHDM SHOPPING BAG</span><h2>Giỏ hàng <span id="drawer-count">(0)</span></h2></div><button id="cart-close" type="button" aria-label="Đóng giỏ hàng">×</button></div><div class="cart-items" id="cart-items"><p class="empty-cart">Giỏ hàng của bạn đang trống.<br>Thêm món đồ bạn yêu thích nhé!</p></div><div class="cart-summary"><div><span>Tạm tính</span><strong id="cart-subtotal">0₫</strong></div><small>Phí vận chuyển sẽ được tính ở bước tiếp theo.</small><button class="checkout-button" type="button" disabled>TIẾP TỤC MUA SẮM</button></div></aside><div class="drawer-backdrop" id="drawer-backdrop"></div>
+  <?php include __DIR__ . '/partials/payment-modal.php'; ?>
+  <aside class="cart-drawer" id="cart-drawer" aria-hidden="true">
+    <div class="cart-head">
+      <div>
+        <span class="section-kicker">HHDM SHOPPING BAG</span>
+        <h2>Giỏ hàng <span id="drawer-count">(0)</span></h2>
+      </div>
+      <button id="cart-close" type="button" aria-label="Đóng giỏ hàng">×</button>
+    </div>
+    <div class="cart-items" id="cart-items">
+      <p class="empty-cart">Giỏ hàng của bạn đang trống.<br>Thêm món đồ bạn yêu thích nhé!</p>
+    </div>
+    <div class="cart-summary">
+      <div class="cart-selection">
+        <label for="cart-select-all"><input id="cart-select-all" type="checkbox" checked> Chọn tất cả</label>
+        <small id="cart-selected-count">0 sản phẩm đã chọn</small>
+      </div>
+      <div><span>Tạm tính món đã chọn</span><strong id="cart-subtotal">0₫</strong></div>
+      <small>Phí vận chuyển sẽ được tính ở bước tiếp theo.</small>
+      <button class="checkout-button" type="button" disabled>THANH TOÁN MÓN ĐÃ CHỌN</button>
+    </div>
+  </aside>
+  <div class="drawer-backdrop" id="drawer-backdrop"></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="assets/js/product-detail.js?v=20261121" defer></script>
 </body>

@@ -87,7 +87,29 @@ $heroSlideCount = count($heroSlides);
     <section class="newsletter"><div><span class="section-kicker">THE HHDM NOTE</span><h2>Nhận cảm hứng mới trong hộp thư.</h2><p>Đăng ký để cập nhật bộ sưu tập, gợi ý phối đồ và ưu đãi dành riêng cho bạn.</p></div><form id="signup-form"><label class="sr-only" for="email">Email của bạn</label><input id="email" type="email" placeholder="Nhập địa chỉ email" required><button type="submit">ĐĂNG KÝ <span>→</span></button><small id="signup-status" aria-live="polite"></small></form></section>
   </main>
   <footer class="site-footer" id="footer"><div class="footer-main"><div class="footer-about"><a class="brand footer-brand" href="#home">HHDM<span>FASHION</span></a><p>Thời trang nữ, nam và phụ kiện cho nhịp sống của bạn. Dễ mặc, dễ phối, tự tin theo cách riêng.</p><strong>HỖ TRỢ KHÁCH HÀNG</strong><a href="tel:1900636828">1900 636 828</a><a href="mailto:hello@hhdmfashion.vn">hello@hhdmfashion.vn</a><small>Thứ Hai – Chủ Nhật · 09:00–21:00</small></div><div><h3>VỀ HHDM</h3><a href="#stories">Câu chuyện thương hiệu</a><a href="#collection">Bộ sưu tập</a><a href="#stories">Góc phối đồ</a><a href="#footer">Hệ thống cửa hàng</a><a href="#footer">Cơ hội nghề nghiệp</a></div><div><h3>HỖ TRỢ</h3><a href="#footer">Hướng dẫn chọn size</a><a href="#footer">Hướng dẫn mua hàng</a><a href="#footer">Chính sách vận chuyển</a><a href="#footer">Chính sách đổi trả</a><a href="#footer">Câu hỏi thường gặp</a></div><div><h3>KẾT NỐI VỚI HHDM</h3><p>Theo dõi HHDM để cập nhật sản phẩm và ưu đãi mới.</p><div class="social-links"><a href="#footer" aria-label="Instagram">IG</a><a href="#footer" aria-label="Facebook">FB</a><a href="#footer" aria-label="TikTok">TT</a></div><h3 class="payment-title">THANH TOÁN</h3><div class="payment-methods"><span>COD</span><span>VISA</span><span>ATM</span></div></div></div><div class="company-info"><strong>HHDM FASHION</strong><span>Thời trang nữ, nam và phụ kiện · © 2026 HHDM Fashion</span><span>Thông tin & chính sách bảo mật</span></div></footer>
-  <aside class="cart-drawer" id="cart-drawer" aria-hidden="true"><div class="cart-head"><div><span class="section-kicker">HHDM SHOPPING BAG</span><h2>Giỏ hàng <span id="drawer-count">(0)</span></h2></div><button id="cart-close" type="button" aria-label="Đóng giỏ hàng">×</button></div><div class="cart-items" id="cart-items"><p class="empty-cart">Giỏ hàng của bạn đang trống.<br>Thêm món đồ bạn yêu thích nhé!</p></div><div class="cart-summary"><div><span>Tạm tính</span><strong id="cart-subtotal">0₫</strong></div><small>Phí vận chuyển sẽ được tính ở bước tiếp theo.</small><button class="checkout-button" type="button" disabled>TIẾP TỤC MUA SẮM</button></div></aside><div class="drawer-backdrop" id="drawer-backdrop"></div>
+  <?php include __DIR__ . '/partials/payment-modal.php'; ?>
+  <aside class="cart-drawer" id="cart-drawer" aria-hidden="true">
+    <div class="cart-head">
+      <div>
+        <span class="section-kicker">HHDM SHOPPING BAG</span>
+        <h2>Giỏ hàng <span id="drawer-count">(0)</span></h2>
+      </div>
+      <button id="cart-close" type="button" aria-label="Đóng giỏ hàng">×</button>
+    </div>
+    <div class="cart-items" id="cart-items">
+      <p class="empty-cart">Giỏ hàng của bạn đang trống.<br>Thêm món đồ bạn yêu thích nhé!</p>
+    </div>
+    <div class="cart-summary">
+      <div class="cart-selection">
+        <label for="cart-select-all"><input id="cart-select-all" type="checkbox" checked> Chọn tất cả</label>
+        <small id="cart-selected-count">0 sản phẩm đã chọn</small>
+      </div>
+      <div><span>Tạm tính món đã chọn</span><strong id="cart-subtotal">0₫</strong></div>
+      <small>Phí vận chuyển sẽ được tính ở bước tiếp theo.</small>
+      <button class="checkout-button" type="button" disabled>THANH TOÁN MÓN ĐÃ CHỌN</button>
+    </div>
+  </aside>
+  <div class="drawer-backdrop" id="drawer-backdrop"></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="assets/js/home.js?v=20261121" defer></script>
 </body>

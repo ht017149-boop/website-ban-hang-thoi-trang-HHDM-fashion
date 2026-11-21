@@ -4,7 +4,7 @@
     const cart = (() => {
         try {
             const saved = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || "[]");
-            return Array.isArray(saved) ? saved : [];
+            return Array.isArray(saved) ? saved.map((item) => ({ ...item, selected: item.selected !== false })) : [];
         } catch {
             return [];
         }
@@ -15,7 +15,11 @@
     function syncCart() {
         try {
             const saved = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || "[]");
-            cart.splice(0, cart.length, ...(Array.isArray(saved) ? saved : []));
+            cart.splice(
+                0,
+                cart.length,
+                ...(Array.isArray(saved) ? saved.map((item) => ({ ...item, selected: item.selected !== false })) : []),
+            );
         } catch {}
         renderCart();
     }
@@ -36,11 +40,18 @@
     }
     function renderCart() {
         const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+        const selectedCart = cart.filter((item) => item.selected !== false);
+        const selectedQuantity = selectedCart.reduce((sum, item) => sum + item.quantity, 0);
         document.getElementById("cart-count").textContent = count;
         document.getElementById("drawer-count").textContent = "(" + count + ")";
         document.getElementById("cart-subtotal").textContent = money(
-            cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
+            selectedCart.reduce((sum, item) => sum + item.price * item.quantity, 0),
         );
+        document.getElementById("cart-selected-count").textContent = selectedQuantity + " sản phẩm đã chọn";
+        const selectAll = document.getElementById("cart-select-all");
+        selectAll.checked = cart.length > 0 && selectedCart.length === cart.length;
+        selectAll.indeterminate = selectedCart.length > 0 && selectedCart.length < cart.length;
+        selectAll.closest(".cart-selection").hidden = !isLoggedIn || cart.length === 0;
         const list = document.getElementById("cart-items");
         if (!isLoggedIn) {
             list.innerHTML =
@@ -53,11 +64,17 @@
             document.querySelector(".checkout-button").disabled = true;
             return;
         }
-        document.querySelector(".checkout-button").disabled = false;
+        document.querySelector(".checkout-button").disabled = selectedCart.length === 0;
         list.innerHTML = cart
             .map(
                 (item) =>
-                    '<article class="cart-item"><img src="' +
+                    '<article class="cart-item"><label class="cart-select"><input type="checkbox" data-select="' +
+                    item.key +
+                    '"' +
+                    (item.selected !== false ? " checked" : "") +
+                    '><span class="sr-only">Chọn ' +
+                    item.name +
+                    '</span></label><img src="' +
                     item.image +
                     '" alt=""><div><strong>' +
                     item.name +
@@ -130,8 +147,10 @@
                     size: selected.dataset.size,
                     image: button.dataset.image,
                     quantity: 1,
+                    selected: true,
                 });
             }
+            if (existing) existing.selected = true;
             saveCart();
             renderCart();
             toast("Đã thêm " + button.dataset.name + " size " + selected.dataset.size + " vào giỏ hàng.");
@@ -143,6 +162,19 @@
             saveCart();
             renderCart();
         }
+    });
+    document.getElementById("cart-items").addEventListener("change", (event) => {
+        const checkbox = event.target.closest("[data-select]");
+        if (!checkbox) return;
+        const item = cart.find((entry) => entry.key === checkbox.dataset.select);
+        if (item) item.selected = checkbox.checked;
+        saveCart();
+        renderCart();
+    });
+    document.getElementById("cart-select-all").addEventListener("change", (event) => {
+        cart.forEach((item) => (item.selected = event.target.checked));
+        saveCart();
+        renderCart();
     });
     document.querySelectorAll(".size-option").forEach((option) =>
         option.addEventListener("click", () => {
@@ -185,8 +217,11 @@
         });
     });
     document.querySelector(".checkout-button").addEventListener("click", () => {
+        const selectedCart = cart.filter((item) => item.selected !== false);
+        if (!selectedCart.length) return;
+        const amount = selectedCart.reduce((sum, item) => sum + item.price * item.quantity, 0);
         hideCart();
-        document.getElementById("new-arrivals").scrollIntoView({ behavior: "smooth" });
+        window.HHDMPayment.open({ items: selectedCart, amount });
     });
     document.getElementById("signup-form").addEventListener("submit", (event) => {
         event.preventDefault();
