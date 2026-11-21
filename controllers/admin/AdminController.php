@@ -30,8 +30,19 @@ class AdminController
             if (in_array($page, ['admin-categories', 'admin-category-create', 'admin-category-edit'], true)) {
                 $this->handleCategoryAction();
             }
+            if (in_array($page, ['admin-comments', 'admin-comment-show'], true)) {
+                $this->handleCommentAction();
+            }
         }
 
+        if ($page === 'admin-comment-show') {
+            $this->showComment();
+            return;
+        }
+        if ($page === 'admin-comments') {
+            $this->showComments();
+            return;
+        }
         if ($page === 'admin-category-create') {
             $this->showCategoryCreate();
             return;
@@ -102,6 +113,7 @@ class AdminController
 
     private function renderProductForm(?array $productToEdit): void
     {
+        $hasSubmittedProductForm = isset($_SESSION['product_form']);
         $productForm = $_SESSION['product_form'] ?? $productToEdit ?? [
             'product_id' => 0,
             'category_id' => '',
@@ -109,13 +121,32 @@ class AdminController
             'description' => '',
             'price' => '',
             'sale_price' => '',
-            'stock_quantity' => '0',
             'image_url' => '',
             'status' => 'active',
-            'sizes' => 'S, M, L, XL',
+            'variants' => [
+                ['size' => 'S', 'stock_quantity' => '0', 'additional_price' => '0.00'],
+                ['size' => 'M', 'stock_quantity' => '0', 'additional_price' => '0.00'],
+                ['size' => 'L', 'stock_quantity' => '0', 'additional_price' => '0.00'],
+                ['size' => 'XL', 'stock_quantity' => '0', 'additional_price' => '0.00'],
+            ],
         ];
+        if (!$hasSubmittedProductForm && $productToEdit !== null) {
+            $baseVariantPrice = (float) ($productToEdit['sale_price'] ?? $productToEdit['price']);
+            foreach ($productForm['variants'] as &$variant) {
+                $variant['additional_price'] = number_format(
+                    $baseVariantPrice + (float) $variant['additional_price'],
+                    2,
+                    '.',
+                    ''
+                );
+            }
+            unset($variant);
+        }
         unset($_SESSION['product_form']);
         $productForm['product_id'] = (int) ($productForm['product_id'] ?? ($productToEdit['product_id'] ?? 0));
+        if (empty($productForm['variants']) || !is_array($productForm['variants'])) {
+            $productForm['variants'] = [['size' => '', 'stock_quantity' => '0', 'additional_price' => '0.00']];
+        }
         $productErrors = $_SESSION['product_errors'] ?? [];
         unset($_SESSION['product_errors']);
         $categories = $this->products->getAdminCategories();
@@ -158,6 +189,61 @@ class AdminController
         $csrfToken = $this->csrfToken();
         $contentView = PATH_VIEW_ADMIN . 'category/index.php';
         require PATH_VIEW_MAIN_ADMIN;
+    }
+
+    private function showComments(): void
+    {
+        $commentList = $this->products->getAdminComments();
+        $currentPage = 'comments';
+        $flash = $this->takeFlash();
+        $csrfToken = $this->csrfToken();
+        $contentView = PATH_VIEW_ADMIN . 'comment/index.php';
+        require PATH_VIEW_MAIN_ADMIN;
+    }
+
+    private function showComment(): void
+    {
+        $commentId = (int) ($_GET['id'] ?? 0);
+        $comment = $commentId > 0 ? $this->products->findAdminComment($commentId) : null;
+        if ($commentId < 1 || !$comment) {
+            $_SESSION['admin_flash'] = 'Không tìm thấy đánh giá cần xem.';
+            header('Location: index.php?page=admin-comments');
+            exit;
+        }
+        $currentPage = 'comments';
+        $flash = $this->takeFlash();
+        $csrfToken = $this->csrfToken();
+        $contentView = PATH_VIEW_ADMIN . 'comment/show.php';
+        require PATH_VIEW_MAIN_ADMIN;
+    }
+
+    private function handleCommentAction(): void
+    {
+        if (!$this->validCsrfToken()) {
+            http_response_code(400);
+            exit('Yêu cầu không hợp lệ hoặc phiên làm việc đã hết hạn.');
+        }
+
+        $action = (string) ($_POST['action'] ?? '');
+        if ($action === 'delete_comment') {
+            $this->deleteComment();
+        } else {
+            http_response_code(400);
+            exit('Thao tác đánh giá không hợp lệ.');
+        }
+    }
+
+    private function deleteComment(): void
+    {
+        $commentId = (int) ($_POST['comment_id'] ?? 0);
+        if ($commentId < 1 || !$this->products->findAdminComment($commentId)) {
+            $_SESSION['admin_flash'] = 'Không tìm thấy đánh giá cần gỡ.';
+            $this->redirectToComments();
+        }
+
+        $this->products->deleteAdminComment($commentId);
+        $_SESSION['admin_flash'] = 'Đã gỡ đánh giá khỏi database.';
+        $this->redirectToComments();
     }
 
     private function showCategoryCreate(): void
@@ -355,13 +441,18 @@ class AdminController
             'description' => trim((string) ($_POST['description'] ?? '')),
             'price' => trim((string) ($_POST['price'] ?? '')),
             'sale_price' => trim((string) ($_POST['sale_price'] ?? '')),
-            'stock_quantity' => trim((string) ($_POST['stock_quantity'] ?? '')),
             'image_url' => trim((string) ($_POST['image_url'] ?? '')),
             'status' => (string) ($_POST['status'] ?? ''),
-            'sizes' => trim((string) ($_POST['sizes'] ?? '')),
         ];
+        $submittedVariants = $_POST['variants'] ?? [];
+        $form['variants'] = [];
         $errors = [];
         $pricePattern = '/^\d{1,10}(?:\.\d{1,2})?$/';
+        $baseVariantPrice = (float) (
+            $form['sale_price'] !== '' && preg_match($pricePattern, $form['sale_price'])
+                ? $form['sale_price']
+                : $form['price']
+        );
 
         if ($productId > 0 && !$existingProduct) {
             $errors[] = 'Không tìm thấy sản phẩm cần chỉnh sửa.';
@@ -381,9 +472,6 @@ class AdminController
             || (float) $form['sale_price'] >= (float) $form['price']
         )) {
             $errors[] = 'Giá khuyến mãi phải lớn hơn 0 và thấp hơn giá gốc.';
-        }
-        if (!ctype_digit($form['stock_quantity']) || (float) $form['stock_quantity'] > 4294967295) {
-            $errors[] = 'Số lượng tồn kho phải là số nguyên không âm hợp lệ.';
         }
         if (!in_array($form['status'], ['active', 'inactive', 'out_of_stock'], true)) {
             $errors[] = 'Trạng thái sản phẩm không hợp lệ.';
@@ -406,24 +494,60 @@ class AdminController
             $errors[] = $this->productUploadErrorMessage($uploadError);
         }
 
-        $sizes = array_values(array_filter(array_map(
-            'trim',
-            explode(',', $form['sizes'])
-        ), static fn(string $size): bool => $size !== ''));
-        $uniqueSizes = [];
-        foreach ($sizes as $size) {
-            $uniqueSizes[mb_strtolower($size)] = $size;
+        if (!is_array($submittedVariants) || !$submittedVariants || count($submittedVariants) > 20) {
+            $errors[] = 'Sản phẩm cần ít nhất một kích cỡ và tối đa 20 kích cỡ.';
+            $submittedVariants = [];
         }
-        $sizes = array_values($uniqueSizes);
-        if (!$sizes || count($sizes) > 20) {
-            $errors[] = 'Nhập ít nhất một size và không quá 20 size, phân cách bằng dấu phẩy.';
-        } else {
-            foreach ($sizes as $size) {
-                if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9 -]{0,29}$/', $size)) {
-                    $errors[] = 'Size chỉ được chứa chữ cái không dấu, chữ số, dấu cách hoặc dấu gạch ngang.';
-                    break;
+
+        $variants = [];
+        $seenSizes = [];
+        $totalStock = 0;
+        foreach ($submittedVariants as $submittedVariant) {
+            if (!is_array($submittedVariant)) {
+                $errors[] = 'Thông tin kích cỡ không hợp lệ.';
+                continue;
+            }
+
+            $variant = [
+                'size' => trim((string) ($submittedVariant['size'] ?? '')),
+                'stock_quantity' => trim((string) ($submittedVariant['stock_quantity'] ?? '')),
+                'additional_price' => trim((string) ($submittedVariant['additional_price'] ?? '0')),
+            ];
+            $form['variants'][] = $variant;
+            if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9 -]{0,29}$/', $variant['size'])) {
+                $errors[] = 'Tên kích cỡ chỉ được chứa chữ cái không dấu, chữ số, dấu cách hoặc dấu gạch ngang.';
+            } elseif (isset($seenSizes[mb_strtolower($variant['size'])])) {
+                $errors[] = 'Không được nhập trùng tên kích cỡ.';
+            } else {
+                $seenSizes[mb_strtolower($variant['size'])] = true;
+            }
+
+            if (!ctype_digit($variant['stock_quantity']) || (float) $variant['stock_quantity'] > 4294967295) {
+                $errors[] = 'Tồn kho mỗi kích cỡ phải là số nguyên từ 0 đến 4.294.967.295.';
+            } else {
+                $totalStock += (int) $variant['stock_quantity'];
+            }
+
+            if (!preg_match($pricePattern, $variant['additional_price'])) {
+                $errors[] = 'Giá theo kích cỡ phải là số không âm, có tối đa 2 chữ số thập phân; nhập 0 để dùng giá sản phẩm.';
+                $sizePrice = 0.0;
+            } else {
+                $sizePrice = (float) $variant['additional_price'];
+                if ($sizePrice === 0.0) {
+                    $sizePrice = $baseVariantPrice;
+                }
+                if ($sizePrice <= 0 || $sizePrice > 9999999999.99) {
+                    $errors[] = 'Giá theo kích cỡ phải lớn hơn 0 và nằm trong giới hạn DECIMAL(12,2).';
                 }
             }
+            $variants[] = [
+                'size' => $variant['size'],
+                'stock_quantity' => $variant['stock_quantity'],
+                'additional_price' => number_format($sizePrice - $baseVariantPrice, 2, '.', ''),
+            ];
+        }
+        if ($totalStock > 4294967295) {
+            $errors[] = 'Tổng tồn kho vượt giới hạn của database.';
         }
 
         if ($errors) {
@@ -449,12 +573,12 @@ class AdminController
             'description' => $form['description'] !== '' ? $form['description'] : null,
             'price' => $form['price'],
             'sale_price' => $form['sale_price'] !== '' ? $form['sale_price'] : null,
-            'stock_quantity' => (int) $form['stock_quantity'],
+            'stock_quantity' => $totalStock,
             'image_url' => $uploadedImagePath ?? ($form['image_url'] !== '' ? $form['image_url'] : null),
             'status' => $form['status'],
         ];
         try {
-            $this->products->saveAdminProduct($product, $sizes, $productId > 0 ? $productId : null);
+            $this->products->saveAdminProduct($product, $variants, $productId > 0 ? $productId : null);
         } catch (Throwable $exception) {
             if ($uploadedImagePath !== null) {
                 $this->removeUploadedProductImage($uploadedImagePath);
@@ -769,6 +893,12 @@ class AdminController
             exit;
         }
         header('Location: index.php?page=admin-category-create');
+        exit;
+    }
+
+    private function redirectToComments(): void
+    {
+        header('Location: index.php?page=admin-comments');
         exit;
     }
 

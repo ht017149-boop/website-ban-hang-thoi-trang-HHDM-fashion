@@ -9,7 +9,7 @@ class ProductModel extends BaseModel
         return $this->pdo->query(
             "SELECT p.product_id, p.product_name, p.price, p.sale_price, p.stock_quantity,
                 p.image_url, p.status, p.created_at, c.category_name,
-                GROUP_CONCAT(DISTINCT NULLIF(pv.size, '') ORDER BY FIELD(pv.size, 'XS', 'S', 'M', 'L', 'XL', 'XXL'), pv.size SEPARATOR ', ') AS sizes
+                GROUP_CONCAT(DISTINCT CONCAT(NULLIF(pv.size, ''), ' (', pv.stock_quantity, ')') ORDER BY FIELD(pv.size, 'XS', 'S', 'M', 'L', 'XL', 'XXL'), pv.size SEPARATOR ', ') AS sizes
              FROM products p
              INNER JOIN categories c ON c.category_id = p.category_id
              LEFT JOIN product_variants pv ON pv.product_id = p.product_id AND pv.status = 'active'
@@ -30,22 +30,46 @@ class ProductModel extends BaseModel
     {
         $statement = $this->pdo->prepare(
             "SELECT p.product_id, p.category_id, p.product_name, p.description, p.price,
-                p.sale_price, p.stock_quantity, p.image_url, p.status,
-                GROUP_CONCAT(DISTINCT NULLIF(pv.size, '') ORDER BY FIELD(pv.size, 'XS', 'S', 'M', 'L', 'XL', 'XXL'), pv.size SEPARATOR ', ') AS sizes
+                p.sale_price, p.image_url, p.status
              FROM products p
-             LEFT JOIN product_variants pv ON pv.product_id = p.product_id AND pv.status = 'active'
              WHERE p.product_id = :product_id
-             GROUP BY p.product_id, p.category_id, p.product_name, p.description, p.price,
-                p.sale_price, p.stock_quantity, p.image_url, p.status"
+             LIMIT 1"
         );
         $statement->execute(['product_id' => $productId]);
         $product = $statement->fetch();
 
+        if ($product !== false) {
+            $product['variants'] = $this->getAdminProductVariants($productId);
+            $product['stock_quantity'] = array_sum(array_column($product['variants'], 'stock_quantity'));
+        }
+
         return $product ?: null;
     }
 
-    public function saveAdminProduct(array $product, array $sizes, ?int $productId = null): int
+    public function getAdminProductVariants(int $productId): array
     {
+        $statement = $this->pdo->prepare(
+            "SELECT size, stock_quantity, additional_price
+             FROM product_variants
+            WHERE product_id = :product_id AND status = 'active'
+               AND size IS NOT NULL AND size <> ''
+             ORDER BY FIELD(size, 'XS', 'S', 'M', 'L', 'XL', 'XXL'), size"
+        );
+        $statement->execute(['product_id' => $productId]);
+        $variants = $statement->fetchAll();
+
+        foreach ($variants as &$variant) {
+            $variant['stock_quantity'] = (int) $variant['stock_quantity'];
+            $variant['additional_price'] = number_format((float) $variant['additional_price'], 2, '.', '');
+        }
+        unset($variant);
+
+        return $variants;
+    }
+
+    public function saveAdminProduct(array $product, array $variants, ?int $productId = null): int
+    {
+        $product['stock_quantity'] = array_sum(array_column($variants, 'stock_quantity'));
         $this->pdo->beginTransaction();
         try {
             if ($productId === null) {
@@ -73,31 +97,31 @@ class ProductModel extends BaseModel
                 'SELECT variant_id FROM product_variants WHERE product_id = :product_id AND size = :size LIMIT 1'
             );
             $updateVariant = $this->pdo->prepare(
-                "UPDATE product_variants SET color = 'Màu trung tính', stock_quantity = :stock_quantity, status = 'active'
+                "UPDATE product_variants SET color = 'Màu trung tính', stock_quantity = :stock_quantity,
+                    additional_price = :additional_price, status = 'active'
                  WHERE variant_id = :variant_id"
             );
             $insertVariant = $this->pdo->prepare(
-                "INSERT INTO product_variants (product_id, size, color, sku, stock_quantity, status)
-                 VALUES (:product_id, :size, 'Màu trung tính', :sku, :stock_quantity, 'active')"
+                "INSERT INTO product_variants (product_id, size, color, sku, stock_quantity, additional_price, status)
+                 VALUES (:product_id, :size, 'Màu trung tính', :sku, :stock_quantity, :additional_price, 'active')"
             );
-            $baseStock = intdiv((int) $product['stock_quantity'], count($sizes));
-            $remainingStock = (int) $product['stock_quantity'] % count($sizes);
 
-            foreach ($sizes as $index => $size) {
-                $variantStock = $baseStock + ($index === 0 ? $remainingStock : 0);
-                $findVariant->execute(['product_id' => $productId, 'size' => $size]);
+            foreach ($variants as $variant) {
+                $findVariant->execute(['product_id' => $productId, 'size' => $variant['size']]);
                 $variantId = $findVariant->fetchColumn();
                 if ($variantId !== false) {
                     $updateVariant->execute([
-                        'stock_quantity' => $variantStock,
+                        'stock_quantity' => $variant['stock_quantity'],
+                        'additional_price' => $variant['additional_price'],
                         'variant_id' => $variantId,
                     ]);
                 } else {
                     $insertVariant->execute([
                         'product_id' => $productId,
-                        'size' => $size,
-                        'sku' => 'HHDM-' . $productId . '-' . $size,
-                        'stock_quantity' => $variantStock,
+                        'size' => $variant['size'],
+                        'sku' => 'HHDM-' . $productId . '-' . $variant['size'],
+                        'stock_quantity' => $variant['stock_quantity'],
+                        'additional_price' => $variant['additional_price'],
                     ]);
                 }
             }
@@ -226,10 +250,33 @@ class ProductModel extends BaseModel
         );
         $products = $productsStatement->fetchAll();
 
+        $variantStatement = $this->pdo->query(
+            "SELECT product_id, size, stock_quantity, additional_price
+             FROM product_variants
+            WHERE status = 'active' AND size IS NOT NULL AND size <> ''
+             ORDER BY product_id, FIELD(size, 'XS', 'S', 'M', 'L', 'XL', 'XXL'), size"
+        );
+        $variantsByProduct = [];
+        foreach ($variantStatement->fetchAll() as $variant) {
+            $variantsByProduct[(int) $variant['product_id']][] = [
+                'size' => $variant['size'],
+                'stock_quantity' => (int) $variant['stock_quantity'],
+                'additional_price' => (float) $variant['additional_price'],
+            ];
+        }
+
         foreach ($products as &$product) {
+            $product['product_id'] = (int) $product['product_id'];
             $product['price'] = (float) $product['price'];
             $product['old'] = $product['old'] !== null ? (float) $product['old'] : null;
-            $product['sizes'] = $product['sizes'] ? explode(',', $product['sizes']) : [];
+            $product['variants'] = $variantsByProduct[$product['product_id']] ?? [];
+            $product['sizes'] = array_values(array_map(
+                static fn(array $variant): string => $variant['size'],
+                array_filter(
+                    $product['variants'],
+                    static fn(array $variant): bool => $variant['stock_quantity'] > 0
+                )
+            ));
             $product['colors'] = $product['colors'] ? explode(',', $product['colors']) : [];
         }
         unset($product);
@@ -274,9 +321,17 @@ class ProductModel extends BaseModel
             return null;
         }
 
-        $product['price'] = (float) ($product['sale_price'] ?? $product['price']);
-        $product['old'] = $product['sale_price'] !== null ? (float) $product['price'] : null;
-        $product['sizes'] = $product['sizes'] ? explode(',', $product['sizes']) : [];
+        $regularPrice = (float) $product['price'];
+        $product['price'] = (float) ($product['sale_price'] ?? $regularPrice);
+        $product['old'] = $product['sale_price'] !== null ? $regularPrice : null;
+        $product['variants'] = $this->getAdminProductVariants($productId);
+        $product['sizes'] = array_values(array_map(
+            static fn(array $variant): string => $variant['size'],
+            array_filter(
+                $product['variants'],
+                static fn(array $variant): bool => $variant['stock_quantity'] > 0
+            )
+        ));
 
         return $product;
     }
@@ -293,5 +348,40 @@ class ProductModel extends BaseModel
         $statement->execute(['product_id' => $productId]);
 
         return $statement->fetchAll();
+    }
+
+    public function getAdminComments(): array
+    {
+        return $this->pdo->query(
+            'SELECT cm.comment_id, cm.product_id, cm.content, cm.rating, cm.created_at,
+                    u.full_name, p.product_name
+             FROM comments cm
+             INNER JOIN users u ON u.user_id = cm.user_id
+             INNER JOIN products p ON p.product_id = cm.product_id
+             ORDER BY cm.created_at DESC, cm.comment_id DESC'
+        )->fetchAll();
+    }
+
+    public function findAdminComment(int $commentId): ?array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT cm.comment_id, cm.product_id, cm.content, cm.rating, cm.created_at,
+                    u.full_name, u.email, p.product_name, p.image_url
+             FROM comments cm
+             INNER JOIN users u ON u.user_id = cm.user_id
+             INNER JOIN products p ON p.product_id = cm.product_id
+             WHERE cm.comment_id = :comment_id
+             LIMIT 1'
+        );
+        $statement->execute(['comment_id' => $commentId]);
+        $comment = $statement->fetch();
+
+        return $comment !== false ? $comment : null;
+    }
+
+    public function deleteAdminComment(int $commentId): void
+    {
+        $statement = $this->pdo->prepare('DELETE FROM comments WHERE comment_id = :comment_id');
+        $statement->execute(['comment_id' => $commentId]);
     }
 }
