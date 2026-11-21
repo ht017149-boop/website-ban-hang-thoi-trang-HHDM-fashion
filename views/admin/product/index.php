@@ -26,7 +26,7 @@ $statusLabels = [
           <td><?= number_format((int) $product['stock_quantity']) ?></td>
           <td class="muted"><?= $escapeProduct($product['sizes'] ?: '—') ?></td>
           <td><span class="badge <?= $product['status'] === 'active' ? 'badge-admin' : 'badge-customer' ?>"><?= $escapeProduct($statusLabels[$product['status']] ?? $product['status']) ?></span></td>
-          <td><div class="actions"><a class="button button-light" href="index.php?page=admin-product-edit&amp;id=<?= (int) $product['product_id'] ?>" style="text-decoration:none">Sửa</a><form method="post" action="index.php?page=admin-products" onsubmit="return confirm('Xóa sản phẩm này khỏi database?')"><input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>"><input type="hidden" name="action" value="delete_product"><input type="hidden" name="product_id" value="<?= (int) $product['product_id'] ?>"><button class="button button-danger" type="submit">Xóa</button></form></div></td>
+          <td><div class="actions"><a class="button button-light" href="index.php?page=admin-product-edit&amp;id=<?= (int) $product['product_id'] ?>" style="text-decoration:none">Sửa</a><form method="post" action="index.php?page=admin-products" data-confirm="Xóa sản phẩm này khỏi database?"><input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>"><input type="hidden" name="action" value="delete_product"><input type="hidden" name="product_id" value="<?= (int) $product['product_id'] ?>"><button class="button button-danger" type="submit">Xóa</button></form></div></td>
         </tr>
       <?php endforeach; ?></tbody>
     </table></div>

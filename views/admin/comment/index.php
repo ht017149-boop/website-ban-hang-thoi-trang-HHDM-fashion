@@ -20,7 +20,7 @@ $escapeComment = static fn($value): string => htmlspecialchars((string) $value, 
           <td class="muted" style="color:#b8860b"><?= str_repeat('★', $rating) . str_repeat('☆', 5 - $rating) ?></td>
           <td class="muted"><?= $escapeComment(mb_substr((string) $comment['content'], 0, 80) . (mb_strlen((string) $comment['content']) > 80 ? '…' : '')) ?></td>
           <td class="muted"><?= $escapeComment(date('d/m/Y H:i', strtotime((string) $comment['created_at']))) ?></td>
-          <td><div class="actions"><a class="button button-light" href="index.php?page=admin-comment-show&amp;id=<?= (int) $comment['comment_id'] ?>" style="text-decoration:none">Xem</a><form method="post" action="index.php?page=admin-comments" onsubmit="return confirm('Gỡ đánh giá này khỏi database?')"><input type="hidden" name="csrf_token" value="<?= $escapeComment($csrfToken) ?>"><input type="hidden" name="action" value="delete_comment"><input type="hidden" name="comment_id" value="<?= (int) $comment['comment_id'] ?>"><button class="button button-danger" type="submit">Gỡ</button></form></div></td>
+          <td><div class="actions"><a class="button button-light" href="index.php?page=admin-comment-show&amp;id=<?= (int) $comment['comment_id'] ?>" style="text-decoration:none">Xem</a><form method="post" action="index.php?page=admin-comments" data-confirm="Gỡ đánh giá này khỏi database?"><input type="hidden" name="csrf_token" value="<?= $escapeComment($csrfToken) ?>"><input type="hidden" name="action" value="delete_comment"><input type="hidden" name="comment_id" value="<?= (int) $comment['comment_id'] ?>"><button class="button button-danger" type="submit">Gỡ</button></form></div></td>
         </tr>
       <?php endforeach; ?></tbody>
     </table></div>

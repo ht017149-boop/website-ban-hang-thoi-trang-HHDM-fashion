@@ -1,12 +1,12 @@
 <?php
 
-if (PHP_SAPI !== 'cli') {
+if (PHP_SAPI !== "cli") {
     http_response_code(404);
-    exit;
+    exit();
 }
 
-require_once __DIR__ . '/../configs/env.php';
-require_once PATH_MODEL . 'UserModel.php';
+require_once __DIR__ . "/../configs/env.php";
+require_once PATH_MODEL . "UserModel.php";
 
 $users = new UserModel();
 if ($users->countAdmins() > 0) {
@@ -18,14 +18,14 @@ $prompt = static function (string $message): string {
     fwrite(STDOUT, $message);
     $value = fgets(STDIN);
 
-    return $value === false ? '' : trim($value);
+    return $value === false ? "" : trim($value);
 };
-$fullName = $prompt('Ho va ten quan tri vien: ');
-$email = $prompt('Email: ');
-$password = $prompt('Mat khau (toi thieu 8 ky tu): ');
-$confirmation = $prompt('Nhap lai mat khau: ');
+$fullName = $prompt("Ho va ten quan tri vien: ");
+$email = $prompt("Email: ");
+$password = $prompt("Mat khau (toi thieu 8 ky tu): ");
+$confirmation = $prompt("Nhap lai mat khau: ");
 
-if ($fullName === '' || mb_strlen($fullName) > 150) {
+if ($fullName === "" || mb_strlen($fullName) > 150) {
     fwrite(STDERR, "Ho ten khong hop le.\n");
     exit(1);
 }
@@ -42,5 +42,5 @@ if ($users->findByEmail($email)) {
     exit(1);
 }
 
-$users->createAccount($fullName, $email, $password, '', 'admin');
+$users->createAccount($fullName, $email, $password, "", "admin");
 fwrite(STDOUT, "Da tao quan tri vien. Hay dang nhap tai index.php?page=login.\n");

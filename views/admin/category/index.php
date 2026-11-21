@@ -1,8 +1,8 @@
 <?php
-$escapeCategory = static fn($value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+$escapeCategory = static fn($value): string => htmlspecialchars((string) $value, ENT_QUOTES, "UTF-8");
 $statusLabels = [
-    'active' => 'Đang hiển thị',
-    'inactive' => 'Tạm ẩn',
+    "active" => "Đang hiển thị",
+    "inactive" => "Tạm ẩn",
 ];
 ?>
 <span class="eyebrow">HHDM FASHION · QUẢN LÝ</span>
@@ -19,12 +19,29 @@ $statusLabels = [
       <thead><tr><th>DANH MỤC</th><th>SLUG</th><th>MÔ TẢ</th><th>SẢN PHẨM</th><th>TRẠNG THÁI</th><th>THAO TÁC</th></tr></thead>
       <tbody><?php foreach ($categoryList as $category): ?>
         <tr>
-          <td class="person"><?= $escapeCategory($category['category_name']) ?><div class="muted">#<?= (int) $category['category_id'] ?></div></td>
-          <td class="muted"><?= $escapeCategory($category['slug']) ?></td>
-          <td class="muted"><?= $escapeCategory($category['description'] !== null ? mb_substr((string) $category['description'], 0, 80) . (mb_strlen((string) $category['description']) > 80 ? '…' : '') : '—') ?></td>
-          <td><?= number_format((int) $category['product_count']) ?></td>
-          <td><span class="badge <?= $category['status'] === 'active' ? 'badge-admin' : 'badge-customer' ?>"><?= $escapeCategory($statusLabels[$category['status']] ?? $category['status']) ?></span></td>
-          <td><div class="actions"><a class="button button-light" href="index.php?page=admin-category-edit&amp;id=<?= (int) $category['category_id'] ?>" style="text-decoration:none">Sửa</a><form method="post" action="index.php?page=admin-categories" onsubmit="return confirm('Xóa danh mục này khỏi database?')"><input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>"><input type="hidden" name="action" value="delete_category"><input type="hidden" name="category_id" value="<?= (int) $category['category_id'] ?>"><button class="button button-danger" type="submit">Xóa</button></form></div></td>
+          <td class="person"><?= $escapeCategory($category["category_name"]) ?><div class="muted">#<?= (int) $category[
+    "category_id"
+] ?></div></td>
+          <td class="muted"><?= $escapeCategory($category["slug"]) ?></td>
+          <td class="muted"><?= $escapeCategory(
+              $category["description"] !== null
+                  ? mb_substr((string) $category["description"], 0, 80) .
+                      (mb_strlen((string) $category["description"]) > 80 ? "…" : "")
+                  : "—",
+          ) ?></td>
+          <td><?= number_format((int) $category["product_count"]) ?></td>
+          <td><span class="badge <?= $category["status"] === "active"
+              ? "badge-admin"
+              : "badge-customer" ?>"><?= $escapeCategory(
+    $statusLabels[$category["status"]] ?? $category["status"],
+) ?></span></td>
+          <td><div class="actions"><a class="button button-light" href="index.php?page=admin-category-edit&amp;id=<?= (int) $category[
+              "category_id"
+          ] ?>" style="text-decoration:none">Sửa</a><form method="post" action="index.php?page=admin-categories" data-confirm="Xóa danh mục này khỏi database?"><input type="hidden" name="csrf_token" value="<?= $escape(
+    $csrfToken,
+) ?>"><input type="hidden" name="action" value="delete_category"><input type="hidden" name="category_id" value="<?= (int) $category[
+    "category_id"
+] ?>"><button class="button button-danger" type="submit">Xóa</button></form></div></td>
         </tr>
       <?php endforeach; ?></tbody>
     </table></div>

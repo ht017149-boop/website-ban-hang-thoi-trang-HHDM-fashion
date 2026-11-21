@@ -17,5 +17,5 @@ $rating = max(0, min(5, (int) $comment['rating']));
       <tr><th>NỘI DUNG</th><td><?= nl2br($escapeComment($comment['content'])) ?></td></tr>
     </tbody>
   </table></div>
-  <div class="actions" style="margin-top:18px"><form method="post" action="index.php?page=admin-comments" onsubmit="return confirm('Gỡ đánh giá này khỏi database?')"><input type="hidden" name="csrf_token" value="<?= $escapeComment($csrfToken) ?>"><input type="hidden" name="action" value="delete_comment"><input type="hidden" name="comment_id" value="<?= (int) $comment['comment_id'] ?>"><button class="button button-danger" type="submit">Gỡ đánh giá</button></form></div>
+  <div class="actions" style="margin-top:18px"><form method="post" action="index.php?page=admin-comments" data-confirm="Gỡ đánh giá này khỏi database?"><input type="hidden" name="csrf_token" value="<?= $escapeComment($csrfToken) ?>"><input type="hidden" name="action" value="delete_comment"><input type="hidden" name="comment_id" value="<?= (int) $comment['comment_id'] ?>"><button class="button button-danger" type="submit">Gỡ đánh giá</button></form></div>
 </section>

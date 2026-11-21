@@ -36,5 +36,6 @@ $adminName = $escape($_SESSION['user']['full_name'] ?? 'Quản trị viên');
       </div>
     </main>
   </div>
+  <script src="assets/js/admin.js?v=20261121" defer></script>
 </body>
 </html>
