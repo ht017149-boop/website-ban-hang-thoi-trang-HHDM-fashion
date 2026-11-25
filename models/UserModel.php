@@ -90,7 +90,13 @@ class UserModel extends BaseModel
                 (SELECT COUNT(*) FROM products) AS total_products,
                 (SELECT COUNT(*) FROM categories) AS total_categories,
                 (SELECT COUNT(*) FROM orders) AS total_orders,
-                (SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE status = 'completed') AS completed_revenue",
+                (SELECT COUNT(*) FROM orders WHERE status = 'completed') AS completed_orders,
+                (SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE status = 'completed') AS completed_revenue,
+                (SELECT COALESCE(SUM(total_amount), 0)
+                 FROM orders
+                 WHERE status = 'completed'
+                   AND YEAR(order_date) = YEAR(CURRENT_DATE())
+                   AND MONTH(order_date) = MONTH(CURRENT_DATE())) AS monthly_revenue",
             )
             ->fetch();
     }

@@ -156,8 +156,7 @@ class AuthController
 
     private function redirectHome(): void
     {
-        $destination = ($_SESSION["user"]["role"] ?? "") === "admin" ? "index.php?page=admin" : "index.php";
-        header("Location: " . $destination);
+        header("Location: index.php");
         exit();
     }
 }

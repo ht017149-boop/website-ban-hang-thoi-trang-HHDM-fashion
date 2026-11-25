@@ -62,7 +62,7 @@ $hasDiscount = $product['old'] !== null;
     @media (max-width: 860px) { .detail-layout { grid-template-columns: 1fr; } }
   </style>
 </head>
-<body data-logged-in="<?= !empty($user) ? 'true' : 'false' ?>">
+<body data-logged-in="<?= !empty($user) ? 'true' : 'false' ?>" data-user-id="<?= (int) ($user['user_id'] ?? 0) ?>">
   <div class="announcement"><span>GIAO HÀNG MIỄN PHÍ</span> cho đơn hàng từ 799.000₫ <b>✦</b> Ưu đãi thành viên mới đến 15%</div>
   <header class="site-header">
     <div class="header-main">
@@ -141,6 +141,6 @@ $hasDiscount = $product['old'] !== null;
   </aside>
   <div class="drawer-backdrop" id="drawer-backdrop"></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="assets/js/product-detail.js?v=20261121" defer></script>
+  <script src="assets/js/product-detail.js?v=20261125" defer></script>
 </body>
 </html>

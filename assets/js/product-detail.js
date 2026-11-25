@@ -1,7 +1,8 @@
 (function () {
     const isLoggedIn = document.body.dataset.loggedIn === "true";
-    const CART_STORAGE_KEY = "hhdm_cart";
+    const CART_STORAGE_KEY = isLoggedIn ? "hhdm_cart_user_" + document.body.dataset.userId : null;
     const cart = (() => {
+        if (!CART_STORAGE_KEY) return [];
         try {
             const saved = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || "[]");
             return Array.isArray(saved) ? saved.map((item) => ({ ...item, selected: item.selected !== false })) : [];
@@ -10,9 +11,15 @@
         }
     })();
     function saveCart() {
+        if (!CART_STORAGE_KEY) return;
         localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
     }
     function syncCart() {
+        if (!CART_STORAGE_KEY) {
+            cart.splice(0, cart.length);
+            renderCart();
+            return;
+        }
         try {
             const saved = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || "[]");
             cart.splice(
@@ -44,7 +51,7 @@
         document.body.classList.remove("drawer-open");
     }
     function renderCart() {
-        const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+        const count = isLoggedIn ? cart.reduce((sum, item) => sum + item.quantity, 0) : 0;
         const selectedCart = cart.filter((item) => item.selected !== false);
         const selectedQuantity = selectedCart.reduce((sum, item) => sum + item.quantity, 0);
         document.getElementById("cart-count").textContent = count;
