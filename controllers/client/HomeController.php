@@ -26,20 +26,21 @@ class HomeController
             echo json_encode(['error' => 'Dữ liệu đơn hàng không hợp lệ.']);
             return;
         }
-        if (!function_exists('curl_init')) {
-            http_response_code(503);
-            echo json_encode(['error' => 'PHP cURL đang tắt. Hãy bật extension=curl trong php.ini rồi khởi động lại Apache.'], JSON_UNESCAPED_UNICODE);
-            return;
-        }
-        if (PAYOS_CLIENT_ID === '' || PAYOS_API_KEY === '' || PAYOS_CHECKSUM_KEY === '') {
-            http_response_code(503);
-            echo json_encode(['error' => 'Chưa có khóa payOS. Điền Client ID, API Key và Checksum Key trong configs/payments.local.php rồi khởi động lại Apache.'], JSON_UNESCAPED_UNICODE);
+        $paymentMethod = (string) ($payload['checkout']['payment_method'] ?? 'bank_transfer');
+        if (!in_array($paymentMethod, ['bank_transfer', 'cod'], true)) {
+            http_response_code(422);
+            echo json_encode(['error' => 'Phương thức thanh toán không hợp lệ.'], JSON_UNESCAPED_UNICODE);
             return;
         }
         try {
             $orders = new OrderModel();
-            $order = $orders->createPendingOrder((int) $_SESSION['user']['user_id'], $payload['items'], is_array($payload['checkout'] ?? null) ? $payload['checkout'] : []);
-            try {
+            $order = $orders->createPendingOrder((int) $_SESSION['user']['user_id'], $payload['items'], is_array($payload['checkout'] ?? null) ? $payload['checkout'] : [], $paymentMethod);
+            if ($paymentMethod === 'cod') {
+                echo json_encode(['success' => true, 'order' => $order], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+            if (function_exists('curl_init') && PAYOS_CLIENT_ID !== '' && PAYOS_API_KEY !== '' && PAYOS_CHECKSUM_KEY !== '') {
+              try {
                 $payments = new PaymentModel();
                 $base = APP_PUBLIC_URL . 'index.php?page=';
                 $payment = $payments->createPaymentLink(
@@ -48,9 +49,12 @@ class HomeController
                     $base . 'payment_cancel&orderCode=' . $order['order_id']
                 );
                 $order['payment'] = $payment;
-            } catch (Throwable $exception) {
-                $orders->cancelAndRestock((int) $order['order_id']);
-                throw $exception;
+              } catch (Throwable $exception) {
+                error_log('HHDM payment link creation failed for order ' . $order['order_id'] . ': ' . $exception->getMessage());
+                $order['payment_error'] = 'Đơn hàng đã được lưu và đang chờ thanh toán, nhưng chưa tạo được mã QR. Vui lòng vào mục đơn hàng hoặc liên hệ cửa hàng để được hỗ trợ.';
+              }
+            } else {
+                $order['payment_error'] = 'Đơn hàng đã được lưu và đang chờ thanh toán. Cửa hàng chưa cấu hình payOS để tạo mã QR.';
             }
             echo json_encode(['success' => true, 'order' => $order], JSON_UNESCAPED_UNICODE);
         } catch (InvalidArgumentException | DomainException $exception) {
@@ -144,9 +148,75 @@ class HomeController
             header('Location: index.php?page=login');
             exit;
         }
+        if (empty($_SESSION['csrf_token'])) $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         $orders = (new OrderModel())->getOrdersForUser($userId);
+        $csrfToken = (string) $_SESSION['csrf_token'];
+        $flash = $_SESSION['client_order_flash'] ?? null;
+        unset($_SESSION['client_order_flash']);
         $escape = static fn($value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
         require PATH_VIEW_CLIENT . 'my-orders.php';
+    }
+
+    public function requestOrderCancellation(): void
+    {
+        $userId = (int) ($_SESSION['user']['user_id'] ?? 0);
+        if ($userId < 1) {
+            header('Location: index.php?page=login');
+            exit;
+        }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST'
+            || empty($_SESSION['csrf_token'])
+            || !hash_equals((string) $_SESSION['csrf_token'], (string) ($_POST['csrf_token'] ?? ''))) {
+            http_response_code(400);
+            exit('Yêu cầu không hợp lệ hoặc phiên làm việc đã hết hạn.');
+        }
+        try {
+            $requested = (new OrderModel())->requestCancellationByUser(
+                (int) ($_POST['order_id'] ?? 0),
+                $userId,
+                (string) ($_POST['reason'] ?? '')
+            );
+            $_SESSION['client_order_flash'] = $requested
+                ? 'Đã gửi yêu cầu hủy. Đơn chỉ được hủy sau khi cửa hàng xem xét.'
+                : 'Không thể gửi yêu cầu. Đơn có thể đã bàn giao hoặc đang có yêu cầu hủy.';
+        } catch (InvalidArgumentException $exception) {
+            $_SESSION['client_order_flash'] = $exception->getMessage();
+        }
+        header('Location: index.php?page=my_orders');
+        exit;
+    }
+
+    public function updateOrderDetails(): void
+    {
+        $userId = (int) ($_SESSION['user']['user_id'] ?? 0);
+        if ($userId < 1) {
+            header('Location: index.php?page=login');
+            exit;
+        }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST'
+            || empty($_SESSION['csrf_token'])
+            || !hash_equals((string) $_SESSION['csrf_token'], (string) ($_POST['csrf_token'] ?? ''))) {
+            http_response_code(400);
+            exit('Yêu cầu không hợp lệ hoặc phiên làm việc đã hết hạn.');
+        }
+        try {
+            $updated = (new OrderModel())->updateDeliveryDetailsByUser(
+                (int) ($_POST['order_id'] ?? 0),
+                $userId,
+                [
+                    'recipient' => $_POST['recipient'] ?? '',
+                    'phone' => $_POST['phone'] ?? '',
+                    'address' => $_POST['address'] ?? '',
+                ]
+            );
+            $_SESSION['client_order_flash'] = $updated
+                ? 'Đã cập nhật thông tin nhận hàng.'
+                : 'Không thể sửa thông tin. Đơn có thể đã bàn giao hoặc đang chờ xử lý yêu cầu hủy.';
+        } catch (InvalidArgumentException $exception) {
+            $_SESSION['client_order_flash'] = $exception->getMessage();
+        }
+        header('Location: index.php?page=my_orders');
+        exit;
     }
 
     public function paymentCancel(): void

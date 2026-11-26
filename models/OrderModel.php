@@ -4,8 +4,57 @@ require_once __DIR__ . '/BaseModel.php';
 
 class OrderModel extends BaseModel
 {
-    public function createPendingOrder(int $userId, array $items, array $shipping): array
+    private static bool $workflowSchemaEnsured = false;
+
+    public function __construct()
     {
+        parent::__construct();
+        $this->ensureWorkflowSchema();
+    }
+
+    private function ensureWorkflowSchema(): void
+    {
+        if (self::$workflowSchemaEnsured) return;
+        $columns = [
+            'cancel_request_status' => "VARCHAR(20) NOT NULL DEFAULT 'none'",
+            'cancel_reason' => 'VARCHAR(500) NULL',
+            'cancel_requested_at' => 'DATETIME NULL',
+            'cancel_reviewed_at' => 'DATETIME NULL',
+            'cancel_admin_note' => 'VARCHAR(500) NULL',
+            'refund_status' => "VARCHAR(20) NOT NULL DEFAULT 'none'",
+            'refund_note' => 'VARCHAR(500) NULL',
+            'cod_collected_at' => 'DATETIME NULL',
+            'archived_at' => 'DATETIME NULL',
+        ];
+        $existing = $this->pdo->prepare(
+            'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table_name'
+        );
+        $existing->execute(['table_name' => 'orders']);
+        $known = array_fill_keys($existing->fetchAll(PDO::FETCH_COLUMN), true);
+        foreach ($columns as $name => $definition) {
+            if (isset($known[$name])) continue;
+            try {
+                $this->pdo->exec('ALTER TABLE orders ADD COLUMN `' . $name . '` ' . $definition);
+            } catch (PDOException $exception) {
+                // Another request may have added this column after the metadata check.
+                if ($exception->getCode() !== '42S21' && (int) ($exception->errorInfo[1] ?? 0) !== 1060) {
+                    throw new RuntimeException(
+                        'Order workflow database columns are missing. Run database/add_order_cancellation_workflow.sql.',
+                        0,
+                        $exception
+                    );
+                }
+            }
+        }
+        self::$workflowSchemaEnsured = true;
+    }
+
+    public function createPendingOrder(int $userId, array $items, array $shipping, string $paymentMethod = 'bank_transfer'): array
+    {
+        if (!in_array($paymentMethod, ['bank_transfer', 'cod'], true)) {
+            throw new InvalidArgumentException('Phương thức thanh toán không hợp lệ.');
+        }
         if ($userId < 1 || !$items || count($items) > 50) {
             throw new InvalidArgumentException('Giỏ hàng không hợp lệ.');
         }
@@ -98,14 +147,20 @@ class OrderModel extends BaseModel
             }
 
             $order = $this->pdo->prepare(
-                "INSERT INTO orders (user_id, recipient_name, recipient_phone, total_amount, status, payment_method, shipping_address, note)
-                 VALUES (:user_id, :recipient_name, :recipient_phone, :total_amount, 'pending', 'bank_transfer', :shipping_address, :note)"
+                "INSERT INTO orders (user_id, recipient_name, recipient_phone, total_amount, status, payment_method,
+                        expected_delivery_from, expected_delivery_to, shipping_address, note)
+                 VALUES (:user_id, :recipient_name, :recipient_phone, :total_amount, :status, :payment_method,
+                        :expected_delivery_from, :expected_delivery_to, :shipping_address, :note)"
             );
             $order->execute([
                 'user_id' => $userId,
                 'recipient_name' => $recipient,
                 'recipient_phone' => $phone,
                 'total_amount' => $total,
+                'status' => $paymentMethod === 'cod' ? 'confirmed' : 'pending',
+                'payment_method' => $paymentMethod,
+                'expected_delivery_from' => $paymentMethod === 'cod' ? date('Y-m-d', strtotime('+3 days')) : null,
+                'expected_delivery_to' => $paymentMethod === 'cod' ? date('Y-m-d', strtotime('+5 days')) : null,
                 'shipping_address' => $address,
                 'note' => $voucher ? 'Đã áp dụng voucher ' . $voucherCode . ' (giảm ' . $totalDiscount . '₫).' : null,
             ]);
@@ -143,7 +198,7 @@ class OrderModel extends BaseModel
                 if ($reserve->rowCount() !== 1) throw new DomainException('Voucher vừa được sử dụng ở đơn hàng khác.');
             }
             $this->pdo->commit();
-            return ['order_id' => $orderId, 'reference' => 'HHDM' . str_pad((string) $orderId, 8, '0', STR_PAD_LEFT), 'amount' => $total, 'discount' => $totalDiscount, 'items' => $lines];
+            return ['order_id' => $orderId, 'reference' => 'HHDM' . str_pad((string) $orderId, 8, '0', STR_PAD_LEFT), 'amount' => $total, 'discount' => $totalDiscount, 'items' => $lines, 'payment_method' => $paymentMethod];
         } catch (Throwable $exception) {
             if ($this->pdo->inTransaction()) $this->pdo->rollBack();
             throw $exception;
@@ -181,13 +236,195 @@ class OrderModel extends BaseModel
         }
     }
 
+    public function requestCancellationByUser(int $orderId, int $userId, string $reason): bool
+    {
+        $reason = trim($reason);
+        if ($reason === '' || mb_strlen($reason) > 500) {
+            throw new InvalidArgumentException('Vui lòng nhập lý do hủy đơn (tối đa 500 ký tự).');
+        }
+        $statement = $this->pdo->prepare(
+            "UPDATE orders SET cancel_request_status = 'requested', cancel_reason = :reason,
+                    cancel_requested_at = CURRENT_TIMESTAMP, cancel_reviewed_at = NULL, cancel_admin_note = NULL
+             WHERE order_id = :order_id AND user_id = :user_id AND status IN ('pending', 'confirmed')
+               AND shipped_at IS NULL AND cancel_request_status IN ('none', 'rejected')"
+        );
+        $statement->execute(['reason' => $reason, 'order_id' => $orderId, 'user_id' => $userId]);
+        return $statement->rowCount() === 1;
+    }
+
+    public function updateDeliveryDetailsByUser(int $orderId, int $userId, array $details): bool
+    {
+        $recipient = trim((string) ($details['recipient'] ?? ''));
+        $phone = trim((string) ($details['phone'] ?? ''));
+        $address = trim((string) ($details['address'] ?? ''));
+        if ($recipient === '' || mb_strlen($recipient) > 150
+            || !preg_match('/^[0-9+().\s-]{8,20}$/', $phone)
+            || $address === '' || mb_strlen($address) > 500) {
+            throw new InvalidArgumentException('Thông tin người nhận, số điện thoại hoặc địa chỉ chưa hợp lệ.');
+        }
+        $statement = $this->pdo->prepare(
+            "UPDATE orders SET recipient_name = :recipient, recipient_phone = :phone, shipping_address = :address
+             WHERE order_id = :order_id AND user_id = :user_id AND status IN ('pending', 'confirmed')
+               AND shipped_at IS NULL AND cancel_request_status IN ('none', 'rejected')"
+        );
+        $statement->execute([
+            'recipient' => $recipient,
+            'phone' => $phone,
+            'address' => $address,
+            'order_id' => $orderId,
+            'user_id' => $userId,
+        ]);
+        return $statement->rowCount() === 1;
+    }
+
+    public function reviewCancellationRequest(int $orderId, bool $approve, string $adminNote = ''): bool
+    {
+        $adminNote = trim($adminNote);
+        if (mb_strlen($adminNote) > 500) throw new InvalidArgumentException('Ghi chú admin tối đa 500 ký tự.');
+        $this->pdo->beginTransaction();
+        try {
+            $lock = $this->pdo->prepare('SELECT status, shipped_at, cancel_request_status FROM orders WHERE order_id = :order_id FOR UPDATE');
+            $lock->execute(['order_id' => $orderId]);
+            $order = $lock->fetch();
+            if (!$order || $order['cancel_request_status'] !== 'requested') {
+                $this->pdo->rollBack();
+                return false;
+            }
+            if ($approve) {
+                if (!in_array($order['status'], ['pending', 'confirmed'], true) || $order['shipped_at'] !== null) {
+                    $this->pdo->rollBack();
+                    return false;
+                }
+                $payment = $this->pdo->prepare('SELECT status FROM order_payments WHERE order_id = :order_id FOR UPDATE');
+                $payment->execute(['order_id' => $orderId]);
+                $paymentStatus = $payment->fetchColumn();
+                $paid = $paymentStatus === 'paid';
+                $this->restoreOrderStock($orderId);
+                $update = $this->pdo->prepare(
+                    "UPDATE orders SET status = 'cancelled', cancel_request_status = 'approved',
+                            cancel_reviewed_at = CURRENT_TIMESTAMP, cancel_admin_note = :note,
+                            refund_status = :refund_status
+                     WHERE order_id = :order_id"
+                );
+                $update->execute([
+                    'note' => $adminNote !== '' ? $adminNote : null,
+                    'refund_status' => $paid ? 'pending' : 'none',
+                    'order_id' => $orderId,
+                ]);
+                $this->pdo->prepare("UPDATE order_payments SET status = 'cancelled' WHERE order_id = :order_id AND status = 'pending'")
+                    ->execute(['order_id' => $orderId]);
+                $this->pdo->prepare("UPDATE late_delivery_vouchers SET status = 'available', reserved_order_id = NULL WHERE reserved_order_id = :order_id AND status = 'reserved'")
+                    ->execute(['order_id' => $orderId]);
+            } else {
+                $update = $this->pdo->prepare(
+                    "UPDATE orders SET cancel_request_status = 'rejected', cancel_reviewed_at = CURRENT_TIMESTAMP,
+                            cancel_admin_note = :note WHERE order_id = :order_id"
+                );
+                $update->execute([
+                    'note' => $adminNote !== '' ? $adminNote : null,
+                    'order_id' => $orderId,
+                ]);
+            }
+            $this->pdo->commit();
+            return true;
+        } catch (Throwable $exception) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            throw $exception;
+        }
+    }
+
+    public function cancelOrderByAdmin(int $orderId, string $reason): bool
+    {
+        $reason = trim($reason);
+        if ($reason === '' || mb_strlen($reason) > 500) throw new InvalidArgumentException('Nhập lý do hủy đơn (tối đa 500 ký tự).');
+        $this->pdo->beginTransaction();
+        try {
+            $lock = $this->pdo->prepare('SELECT status, shipped_at, cancel_request_status FROM orders WHERE order_id = :order_id FOR UPDATE');
+            $lock->execute(['order_id' => $orderId]);
+            $order = $lock->fetch();
+            if (!$order || !in_array($order['status'], ['pending', 'confirmed'], true)
+                || $order['shipped_at'] !== null || $order['cancel_request_status'] === 'requested') {
+                $this->pdo->rollBack();
+                return false;
+            }
+            $payment = $this->pdo->prepare('SELECT status FROM order_payments WHERE order_id = :order_id FOR UPDATE');
+            $payment->execute(['order_id' => $orderId]);
+            $paid = $payment->fetchColumn() === 'paid';
+            $this->restoreOrderStock($orderId);
+            $update = $this->pdo->prepare(
+                "UPDATE orders SET status = 'cancelled', cancel_request_status = 'admin_cancelled',
+                        cancel_reason = :reason, cancel_reviewed_at = CURRENT_TIMESTAMP, cancel_admin_note = :admin_note,
+                        refund_status = :refund_status
+                 WHERE order_id = :order_id"
+            );
+            $update->execute(['reason' => $reason, 'admin_note' => $reason, 'refund_status' => $paid ? 'pending' : 'none', 'order_id' => $orderId]);
+            $this->pdo->prepare("UPDATE order_payments SET status = 'cancelled' WHERE order_id = :order_id AND status = 'pending'")
+                ->execute(['order_id' => $orderId]);
+            $this->pdo->prepare("UPDATE late_delivery_vouchers SET status = 'available', reserved_order_id = NULL WHERE reserved_order_id = :order_id AND status = 'reserved'")
+                ->execute(['order_id' => $orderId]);
+            $this->pdo->commit();
+            return true;
+        } catch (Throwable $exception) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            throw $exception;
+        }
+    }
+
+    public function markOrderRefunded(int $orderId, string $refundNote): bool
+    {
+        $refundNote = trim($refundNote);
+        if ($refundNote === '' || mb_strlen($refundNote) > 500) {
+            throw new InvalidArgumentException('Nhập mã giao dịch hoặc ghi chú xác nhận hoàn tiền (tối đa 500 ký tự).');
+        }
+        $statement = $this->pdo->prepare(
+            "UPDATE orders SET refund_status = 'refunded', refund_note = :note
+             WHERE order_id = :order_id AND status = 'cancelled' AND refund_status = 'pending'"
+        );
+        $statement->execute(['note' => $refundNote, 'order_id' => $orderId]);
+        return $statement->rowCount() === 1;
+    }
+
+    public function setOrderArchived(int $orderId, bool $archived): bool
+    {
+        if ($archived) {
+            $statement = $this->pdo->prepare(
+                "UPDATE orders SET archived_at = CURRENT_TIMESTAMP
+                 WHERE order_id = :order_id AND status IN ('cancelled', 'completed') AND archived_at IS NULL"
+            );
+        } else {
+            $statement = $this->pdo->prepare(
+                "UPDATE orders SET archived_at = NULL
+                 WHERE order_id = :order_id AND status IN ('cancelled', 'completed') AND archived_at IS NOT NULL"
+            );
+        }
+        $statement->execute(['order_id' => $orderId]);
+        return $statement->rowCount() === 1;
+    }
+
+    private function restoreOrderStock(int $orderId): void
+    {
+        $items = $this->pdo->prepare('SELECT variant_id, product_id, quantity FROM order_items WHERE order_id = :order_id');
+        $items->execute(['order_id' => $orderId]);
+        $stock = $this->pdo->prepare('UPDATE product_variants SET stock_quantity = stock_quantity + :quantity WHERE variant_id = :variant_id');
+        $productIds = [];
+        foreach ($items->fetchAll() as $item) {
+            $stock->execute(['quantity' => $item['quantity'], 'variant_id' => $item['variant_id']]);
+            $productIds[] = (int) $item['product_id'];
+        }
+        if ($productIds) {
+            $this->pdo->exec('UPDATE products p SET p.stock_quantity = (SELECT COALESCE(SUM(pv.stock_quantity),0) FROM product_variants pv WHERE pv.product_id=p.product_id AND pv.status=\'active\') WHERE p.product_id IN (' . implode(',', array_unique($productIds)) . ')');
+        }
+    }
+
     public function getOrdersForUser(int $userId): array
     {
         $this->issueLateDeliveryVouchers();
         $statement = $this->pdo->prepare(
-            'SELECT o.order_id, o.order_date, o.total_amount, o.status, o.shipping_address, o.recipient_name, o.recipient_phone,
+            'SELECT o.order_id, o.order_date, o.total_amount, o.status, o.payment_method, o.shipping_address, o.recipient_name, o.recipient_phone,
                     o.expected_delivery_from, o.expected_delivery_to, o.shipping_company, o.tracking_number,
-                    o.shipped_at, o.delivered_at, o.note, op.paid_at
+                    o.shipped_at, o.delivered_at, o.note, o.cancel_request_status, o.cancel_reason, o.cancel_requested_at,
+                    o.cancel_reviewed_at, o.cancel_admin_note, o.refund_status, o.refund_note, o.cod_collected_at,
+                    op.status AS payment_status, op.paid_at
              FROM orders o LEFT JOIN order_payments op ON op.order_id = o.order_id
              WHERE o.user_id = :user_id ORDER BY o.order_date DESC, o.order_id DESC'
         );
@@ -196,15 +433,19 @@ class OrderModel extends BaseModel
         return $this->attachOrderDetails($orders);
     }
 
-    public function getAdminOrders(): array
+    public function getAdminOrders(bool $includeArchived = false): array
     {
         $this->issueLateDeliveryVouchers();
+        $archiveCondition = $includeArchived ? 'o.archived_at IS NOT NULL' : 'o.archived_at IS NULL';
         $orders = $this->pdo->query(
-            'SELECT o.order_id, o.order_date, o.total_amount, o.status, o.shipping_address, o.recipient_name,
+            'SELECT o.order_id, o.order_date, o.total_amount, o.status, o.payment_method, o.shipping_address, o.recipient_name,
                     o.recipient_phone, o.expected_delivery_from, o.expected_delivery_to, o.shipping_company,
-                    o.tracking_number, o.shipped_at, o.delivered_at, o.note, op.paid_at, u.full_name, u.email
+                    o.tracking_number, o.shipped_at, o.delivered_at, o.note, o.cancel_request_status, o.cancel_reason,
+                    o.cancel_requested_at, o.cancel_reviewed_at, o.cancel_admin_note, o.refund_status, o.refund_note, o.cod_collected_at, o.archived_at,
+                    op.status AS payment_status, op.paid_at, u.full_name, u.email
              FROM orders o INNER JOIN users u ON u.user_id = o.user_id
              LEFT JOIN order_payments op ON op.order_id = o.order_id
+             WHERE ' . $archiveCondition . '
              ORDER BY FIELD(o.status, \'pending\', \'confirmed\', \'shipping\', \'completed\', \'cancelled\'), o.order_date DESC'
         )->fetchAll();
         return $this->attachOrderDetails($orders);
@@ -213,22 +454,26 @@ class OrderModel extends BaseModel
     public function updateDeliveryStatus(int $orderId, string $status, string $carrier = '', string $trackingNumber = ''): bool
     {
         if ($status === 'shipping') {
+            $carrier = trim($carrier);
+            $trackingNumber = trim($trackingNumber);
+            if ($carrier === '' || $trackingNumber === '') return false;
             $statement = $this->pdo->prepare(
                 "UPDATE orders SET status = 'shipping', shipping_company = :carrier, tracking_number = :tracking,
                         shipped_at = COALESCE(shipped_at, CURRENT_TIMESTAMP)
-                 WHERE order_id = :order_id AND status = 'confirmed'"
+                 WHERE order_id = :order_id AND status = 'confirmed' AND cancel_request_status <> 'requested'"
             );
             $statement->execute([
-                'carrier' => trim($carrier) !== '' ? trim($carrier) : null,
-                'tracking' => trim($trackingNumber) !== '' ? trim($trackingNumber) : null,
+                'carrier' => $carrier,
+                'tracking' => $trackingNumber,
                 'order_id' => $orderId,
             ]);
             return $statement->rowCount() === 1;
         }
         if ($status === 'completed') {
             $statement = $this->pdo->prepare(
-                "UPDATE orders SET status = 'completed', delivered_at = CURRENT_TIMESTAMP
-                 WHERE order_id = :order_id AND status IN ('confirmed', 'shipping')"
+                "UPDATE orders SET status = 'completed', delivered_at = CURRENT_TIMESTAMP,
+                        cod_collected_at = CASE WHEN payment_method = 'cod' THEN CURRENT_TIMESTAMP ELSE cod_collected_at END
+                 WHERE order_id = :order_id AND status = 'shipping'"
             );
             $statement->execute(['order_id' => $orderId]);
             if ($statement->rowCount() === 1) $this->issueLateDeliveryVouchers();

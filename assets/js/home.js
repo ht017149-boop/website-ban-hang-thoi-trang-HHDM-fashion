@@ -283,7 +283,7 @@
     const heroSlides = [...document.querySelectorAll(".hero-slide")];
     const heroDots = [...document.querySelectorAll(".hero-dot")];
     const heroSection = document.getElementById("hero-slideshow");
-    const HERO_DELAY = 6000;
+    const HERO_DELAY = 3500;
     let heroIndex = 0;
     let heroTimer = null;
     function showHeroSlide(next) {

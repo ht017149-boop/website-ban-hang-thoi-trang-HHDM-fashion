@@ -74,7 +74,7 @@
         creatingOrder = true;
         const submitButton = checkoutForm.querySelector("button[type=submit]");
         submitButton.disabled = true;
-        feedback.textContent = "Đang kiểm tra tồn kho và kết nối cổng thanh toán…";
+        feedback.textContent = "Đang kiểm tra tồn kho và tạo đơn hàng…";
         try {
             const form = new FormData(checkoutForm);
             const response = await fetch("index.php?page=create_order", {
@@ -87,6 +87,7 @@
                         phone: form.get("phone"),
                         address: form.get("address"),
                         voucher_code: form.get("voucher_code"),
+                        payment_method: form.get("payment_method"),
                     },
                 }),
             });
@@ -97,15 +98,31 @@
             orderCreatedNumber.textContent = "Mã đơn hàng: #" + order.order_id + (order.discount > 0 ? " · Đã giảm " + money(order.discount) : "");
             orderCreatedNotice.hidden = false;
             amountLabel.textContent = money(order.amount);
-            referenceLabel.textContent = order.reference;
-            document.getElementById("payment-bank").textContent = [order.payment.bank_bin, order.payment.account_name].filter(Boolean).join(" · ") || "payOS";
-            document.getElementById("payment-account").textContent = order.payment.account_number || "Xem trên trang payOS";
             itemsList.replaceChildren(...order.items.map((item) => {
                 const row = document.createElement("p");
                 row.textContent = `${item.name} · Size ${item.size} × ${item.quantity}`;
                 return row;
             }));
             checkoutForm.hidden = true;
+            if (order.payment_method === "cod") {
+                referenceLabel.textContent = "Thanh toán khi nhận hàng (COD)";
+                feedback.textContent = "Đặt hàng thành công. Bạn sẽ thanh toán khi nhận hàng.";
+                paymentNote.hidden = true;
+                paymentDetails.hidden = true;
+                qrWrap.hidden = true;
+                return;
+            }
+            if (!order.payment) {
+                referenceLabel.textContent = order.reference;
+                feedback.textContent = order.payment_error || "Đơn hàng đã được lưu và đang chờ thanh toán.";
+                paymentNote.hidden = true;
+                paymentDetails.hidden = true;
+                qrWrap.hidden = true;
+                return;
+            }
+            referenceLabel.textContent = order.reference;
+            document.getElementById("payment-bank").textContent = [order.payment.bank_bin, order.payment.account_name].filter(Boolean).join(" · ") || "payOS";
+            document.getElementById("payment-account").textContent = order.payment.account_number || "Xem trên trang payOS";
             qr.src = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&format=svg&data=${encodeURIComponent(order.payment.qr_code)}`;
             qr.alt = `Mã QR thanh toán đơn hàng ${order.order_id}, số tiền ${money(order.amount)}`;
             qrWrap.hidden = false;

@@ -106,6 +106,34 @@ class PaymentModel extends BaseModel
         return ($data['status'] ?? '') === 'CANCELLED';
     }
 
+    public function cancelPendingPaymentLink(int $orderId, string $reason): string
+    {
+        $payment = $this->findPayment($orderId);
+        if (!$payment) return 'none';
+        if ($payment['status'] === 'paid') return 'paid';
+        if ($payment['status'] === 'cancelled') return 'cancelled';
+
+        $data = $this->request('GET', '/v2/payment-requests/' . rawurlencode((string) $orderId));
+        $providerStatus = (string) ($data['status'] ?? '');
+        if ($providerStatus === 'PAID') {
+            if ((int) ($data['amountPaid'] ?? 0) === (int) round((float) $payment['total_amount'])) {
+                $this->markPaid($orderId, (int) $payment['total_amount']);
+                return 'paid';
+            }
+            return 'failed';
+        }
+        if ($providerStatus === 'PENDING') {
+            $data = $this->request('POST', '/v2/payment-requests/' . rawurlencode((string) $orderId) . '/cancel', [
+                'cancellationReason' => mb_substr($reason, 0, 500),
+            ]);
+            $providerStatus = (string) ($data['status'] ?? '');
+        }
+        if ($providerStatus !== 'CANCELLED') return 'failed';
+        $this->pdo->prepare("UPDATE order_payments SET status = 'cancelled' WHERE order_id = :order_id AND status = 'pending'")
+            ->execute(['order_id' => $orderId]);
+        return 'cancelled';
+    }
+
     public function handleWebhook(array $payload): bool
     {
         $this->ensureConfigured();

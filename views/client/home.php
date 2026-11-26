@@ -46,7 +46,7 @@ $heroSlideCount = count($heroSlides);
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/home.css?v=account-drawer-delivery">
+  <link rel="stylesheet" href="assets/css/home.css?v=account-drawer-delivery-greeting">
 </head>
 <body data-logged-in="<?= !empty($user) ? 'true' : 'false' ?>" data-user-id="<?= (int) ($user['user_id'] ?? 0) ?>" data-user-name="<?= $escape($user['full_name'] ?? '') ?>" data-csrf-token="<?= $escape($_SESSION['csrf_token'] ?? '') ?>">
   <div class="announcement"><span>GIAO HÀNG MIỄN PHÍ</span> cho đơn hàng từ 799.000₫ <b>✦</b> Ưu đãi thành viên mới đến 15%</div>
@@ -57,6 +57,7 @@ $heroSlideCount = count($heroSlides);
       <form class="search-form" id="search-form" role="search"><label class="sr-only" for="search-input">Tìm kiếm sản phẩm</label><input id="search-input" type="search" placeholder="Bạn đang tìm sản phẩm nào?"><button type="submit" aria-label="Tìm kiếm">⌕</button></form>
       <div class="account-actions">
         <?php if ($user): ?>
+          <span class="welcome">Xin chào, <?= $escape($user['full_name'] ?? 'bạn') ?></span>
           <?php if (($user['role'] ?? '') === 'admin'): ?>
             <a href="index.php?page=admin">Quản trị</a>
             <button class="cart-trigger" id="cart-trigger" type="button" aria-label="Mở giỏ hàng"><span class="action-icon">♧</span><span>Giỏ hàng</span><b id="cart-count">0</b></button>
@@ -145,6 +146,6 @@ $heroSlideCount = count($heroSlides);
   <?php endif; ?>
   <div class="drawer-backdrop" id="drawer-backdrop"></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="assets/js/home.js?v=account-drawer" defer></script>
+  <script src="assets/js/home.js?v=hero-speed-3500" defer></script>
 </body>
 </html>

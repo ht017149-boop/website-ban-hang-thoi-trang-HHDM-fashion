@@ -23,6 +23,8 @@ File `payments.local.php` bị Git bỏ qua để không đẩy khóa bí mật 
 
 Chạy lần lượt `database/create_order_items.sql`, `database/create_order_payments.sql` và `database/add_order_delivery_tracking.sql` trên database `website_ban_hang_thoi_trang`.
 
+Để bật yêu cầu hủy đơn và ghi nhận hoàn tiền, chạy thêm `database/add_order_cancellation_workflow.sql` đúng một lần trên cùng database.
+
 ## 4. Đăng ký webhook
 
 Trong kênh payOS, đặt webhook URL là:

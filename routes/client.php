@@ -28,6 +28,12 @@ return static function (): void {
         case "my_orders":
             (new HomeController())->myOrders();
             return;
+        case "request_order_cancellation":
+            (new HomeController())->requestOrderCancellation();
+            return;
+        case "update_order_details":
+            (new HomeController())->updateOrderDetails();
+            return;
         case "register":
             (new AuthController())->register();
             return;

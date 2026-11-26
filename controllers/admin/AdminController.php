@@ -3,6 +3,7 @@
 require_once PATH_MODEL . 'UserModel.php';
 require_once PATH_MODEL . 'ProductModel.php';
 require_once PATH_MODEL . 'OrderModel.php';
+require_once PATH_MODEL . 'PaymentModel.php';
 
 class AdminController
 {
@@ -94,7 +95,8 @@ class AdminController
 
     private function showOrders(): void
     {
-        $orders = (new OrderModel())->getAdminOrders();
+        $showArchivedOrders = (string) ($_GET['archived'] ?? '') === '1';
+        $orders = (new OrderModel())->getAdminOrders($showArchivedOrders);
         $currentPage = 'orders';
         $flash = $this->takeFlash();
         $csrfToken = $this->csrfToken();
@@ -110,16 +112,98 @@ class AdminController
             exit;
         }
         $orderId = (int) ($_POST['order_id'] ?? 0);
+        $action = (string) ($_POST['action'] ?? 'delivery_status');
+        $orders = new OrderModel();
+        if ($action === 'archive_order' || $action === 'restore_order') {
+            $updated = $orders->setOrderArchived($orderId, $action === 'archive_order');
+            $_SESSION['admin_flash'] = $updated
+                ? ($action === 'archive_order' ? 'Đã lưu trữ đơn. Lịch sử vẫn được giữ trong mục đơn lưu trữ.' : 'Đã khôi phục đơn về danh sách chính.')
+                : 'Chỉ có thể lưu trữ hoặc khôi phục đơn đã giao hoặc đã hủy.';
+            $redirectArchived = $action === 'restore_order' ? '1' : '0';
+            header('Location: index.php?page=admin-orders&archived=' . $redirectArchived);
+            exit;
+        }
+        if ($action === 'cancel_order') {
+            $reason = (string) ($_POST['cancel_reason'] ?? '');
+            try {
+                if (trim($reason) === '') {
+                    $updated = false;
+                } else {
+                    $paymentCheck = (new PaymentModel())->cancelPendingPaymentLink($orderId, $reason);
+                    $updated = $paymentCheck !== 'failed' && $orders->cancelOrderByAdmin($orderId, $reason);
+                }
+            } catch (Throwable $exception) {
+                error_log('HHDM admin order cancellation failed: ' . $exception->getMessage());
+                $updated = false;
+            }
+            $_SESSION['admin_flash'] = $updated
+                ? 'Đã hủy đơn, hoàn tồn kho và ghi nhận hoàn tiền nếu cần.'
+                : 'Không thể hủy đơn. Hãy kiểm tra thanh toán, trạng thái đơn và lý do hủy.';
+            header('Location: index.php?page=admin-orders');
+            exit;
+        }
+        if ($action === 'review_cancellation') {
+            $decision = (string) ($_POST['decision'] ?? '');
+            if (!in_array($decision, ['approve', 'reject'], true)) {
+                $_SESSION['admin_flash'] = 'Thao tác duyệt hủy không hợp lệ.';
+                header('Location: index.php?page=admin-orders');
+                exit;
+            }
+            if ($decision === 'approve') {
+                try {
+                    $paymentCheck = (new PaymentModel())->cancelPendingPaymentLink(
+                        $orderId,
+                        (string) ($_POST['admin_note'] ?? 'Customer cancellation request')
+                    );
+                } catch (Throwable $exception) {
+                    error_log('HHDM cancellation payment check failed: ' . $exception->getMessage());
+                    $paymentCheck = 'failed';
+                }
+                if ($paymentCheck === 'failed') {
+                    $_SESSION['admin_flash'] = 'Không thể kiểm tra/hủy link payOS. Đơn vẫn được giữ nguyên; hãy kiểm tra cổng thanh toán rồi thử lại.';
+                    header('Location: index.php?page=admin-orders');
+                    exit;
+                }
+            }
+            try {
+                $updated = $orders->reviewCancellationRequest(
+                    $orderId,
+                    $decision === 'approve',
+                    (string) ($_POST['admin_note'] ?? '')
+                );
+            } catch (InvalidArgumentException $exception) {
+                $updated = false;
+            }
+            $_SESSION['admin_flash'] = $updated
+                ? ($decision === 'approve' ? 'Đã hủy đơn, cập nhật tồn kho và ghi nhận hoàn tiền nếu cần.' : 'Đã từ chối yêu cầu hủy đơn.')
+                : 'Không thể xử lý yêu cầu hủy. Hãy kiểm tra trạng thái đơn và ghi chú.';
+            header('Location: index.php?page=admin-orders');
+            exit;
+        }
+        if ($action === 'mark_refunded') {
+            try {
+                $updated = $orders->markOrderRefunded($orderId, (string) ($_POST['refund_note'] ?? ''));
+            } catch (InvalidArgumentException $exception) {
+                $updated = false;
+            }
+            $_SESSION['admin_flash'] = $updated
+                ? 'Đã ghi nhận hoàn tiền. Lưu lại mã giao dịch trong ghi chú.'
+                : 'Chưa ghi nhận hoàn tiền. Hãy nhập mã giao dịch và kiểm tra trạng thái đơn.';
+            header('Location: index.php?page=admin-orders');
+            exit;
+        }
         $status = (string) ($_POST['status'] ?? '');
-        $updated = (new OrderModel())->updateDeliveryStatus(
+        $updated = $orders->updateDeliveryStatus(
             $orderId,
             $status,
             (string) ($_POST['shipping_company'] ?? ''),
             (string) ($_POST['tracking_number'] ?? '')
         );
         $_SESSION['admin_flash'] = $updated
-            ? ($status === 'shipping' ? 'Đã cập nhật đơn sang đang vận chuyển.' : 'Đã xác nhận đơn giao thành công.')
-            : 'Không thể cập nhật trạng thái đơn hàng. Hãy kiểm tra trạng thái hiện tại.';
+            ? ($status === 'shipping' ? 'Đã ghi nhận bàn giao cho đơn vị vận chuyển.' : 'Đã xác nhận đơn giao thành công.')
+            : ($status === 'shipping'
+                ? 'Chưa ghi nhận bàn giao. Hãy nhập đơn vị vận chuyển và mã vận đơn, đồng thời kiểm tra trạng thái đơn.'
+                : 'Không thể cập nhật trạng thái đơn hàng. Hãy kiểm tra trạng thái hiện tại.');
         header('Location: index.php?page=admin-orders');
         exit;
     }
