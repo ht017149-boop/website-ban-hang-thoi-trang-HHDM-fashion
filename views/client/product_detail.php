@@ -20,7 +20,7 @@ $hasDiscount = $product['old'] !== null;
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/home.css">
+  <link rel="stylesheet" href="assets/css/home.css?v=payos-checkout">
   <style>
     .detail-main { max-width: 1180px; margin: 0 auto; padding: 38px 22px 70px; }
     .breadcrumb { color: #999b95; font-size: 10px; letter-spacing: .07em; margin-bottom: 22px; }
@@ -62,7 +62,7 @@ $hasDiscount = $product['old'] !== null;
     @media (max-width: 860px) { .detail-layout { grid-template-columns: 1fr; } }
   </style>
 </head>
-<body data-logged-in="<?= !empty($user) ? 'true' : 'false' ?>" data-user-id="<?= (int) ($user['user_id'] ?? 0) ?>">
+<body data-logged-in="<?= !empty($user) ? 'true' : 'false' ?>" data-user-id="<?= (int) ($user['user_id'] ?? 0) ?>" data-user-name="<?= $escape($user['full_name'] ?? '') ?>" data-csrf-token="<?= $escape($_SESSION['csrf_token'] ?? '') ?>">
   <div class="announcement"><span>GIAO HÀNG MIỄN PHÍ</span> cho đơn hàng từ 799.000₫ <b>✦</b> Ưu đãi thành viên mới đến 15%</div>
   <header class="site-header">
     <div class="header-main">
@@ -92,8 +92,8 @@ $hasDiscount = $product['old'] !== null;
           <p class="no-comment">Sản phẩm hiện chưa có kích cỡ khả dụng.</p>
         <?php endif; ?>
         <div class="detail-actions">
-          <button class="cart-button" type="button" id="add-to-cart" data-name="<?= $escape($product['product_name']) ?>" data-code="<?= $escape($product['code']) ?>" data-base-price="<?= $escape(number_format((float) $product['price'], 2, '.', '')) ?>" data-base-old="<?= $escape($product['old'] === null ? '' : number_format((float) $product['old'], 2, '.', '')) ?>" data-price="<?= $escape(number_format((float) $product['price'], 2, '.', '')) ?>" data-image="<?= $escape($productImageUrl) ?>">THÊM VÀO GIỎ</button>
-          <button class="buy-button" type="button" id="buy-now" data-name="<?= $escape($product['product_name']) ?>" data-code="<?= $escape($product['code']) ?>" data-base-price="<?= $escape(number_format((float) $product['price'], 2, '.', '')) ?>" data-base-old="<?= $escape($product['old'] === null ? '' : number_format((float) $product['old'], 2, '.', '')) ?>" data-price="<?= $escape(number_format((float) $product['price'], 2, '.', '')) ?>" data-image="<?= $escape($productImageUrl) ?>">MUA NGAY</button>
+          <button class="cart-button" type="button" id="add-to-cart" data-product-id="<?= (int) $product['product_id'] ?>" data-name="<?= $escape($product['product_name']) ?>" data-code="<?= $escape($product['code']) ?>" data-base-price="<?= $escape(number_format((float) $product['price'], 2, '.', '')) ?>" data-base-old="<?= $escape($product['old'] === null ? '' : number_format((float) $product['old'], 2, '.', '')) ?>" data-price="<?= $escape(number_format((float) $product['price'], 2, '.', '')) ?>" data-image="<?= $escape($productImageUrl) ?>">THÊM VÀO GIỎ</button>
+          <button class="buy-button" type="button" id="buy-now" data-product-id="<?= (int) $product['product_id'] ?>" data-name="<?= $escape($product['product_name']) ?>" data-code="<?= $escape($product['code']) ?>" data-base-price="<?= $escape(number_format((float) $product['price'], 2, '.', '')) ?>" data-base-old="<?= $escape($product['old'] === null ? '' : number_format((float) $product['old'], 2, '.', '')) ?>" data-price="<?= $escape(number_format((float) $product['price'], 2, '.', '')) ?>" data-image="<?= $escape($productImageUrl) ?>">MUA NGAY</button>
         </div>
         <span class="detail-section-label">MÔ TẢ SẢN PHẨM</span>
         <p class="detail-desc"><?= $escape($product['description'] !== null && $product['description'] !== '' ? $product['description'] : 'Sản phẩm chính hãng HHDM Fashion, chất liệu thoáng mát, phom dáng dễ mặc.') ?></p>
@@ -141,6 +141,6 @@ $hasDiscount = $product['old'] !== null;
   </aside>
   <div class="drawer-backdrop" id="drawer-backdrop"></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="assets/js/product-detail.js?v=20261125" defer></script>
+  <script src="assets/js/product-detail.js?v=20261126" defer></script>
 </body>
 </html>

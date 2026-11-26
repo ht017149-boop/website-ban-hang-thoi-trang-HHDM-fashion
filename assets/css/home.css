@@ -2008,6 +2008,14 @@ body.search-mode .site-footer {
     font-size: 11px;
     line-height: 1.5;
 }
+.checkout-details { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:16px 0; }
+.checkout-details label { display:grid; gap:5px; color:#70736a; font-size:11px; }
+.checkout-details input,.checkout-details textarea { width:100%; box-sizing:border-box; border:1px solid #dcd9d1; padding:10px; color:#252820; background:#fff; font:12px 'DM Sans',Arial,sans-serif; }
+.checkout-details textarea { resize:vertical; }
+.checkout-address,.checkout-confirm { grid-column:1 / -1; }
+.checkout-confirm { min-height:44px; border:0; background:var(--olive); color:#fff; font:700 10px 'DM Sans',Arial,sans-serif; letter-spacing:.1em; cursor:pointer; }
+.checkout-confirm:disabled { opacity:.6; cursor:wait; }
+.payment-details[hidden],.payment-note[hidden] { display:none !important; }
 .payment-total {
     display: flex;
     align-items: center;
@@ -2071,6 +2079,7 @@ body.search-mode .site-footer {
     border: 1px solid var(--line);
     background: #fff;
 }
+.payment-qr-wrap[hidden] { display:none !important; }
 .payment-qr {
     display: block;
     width: min(100%, 280px);

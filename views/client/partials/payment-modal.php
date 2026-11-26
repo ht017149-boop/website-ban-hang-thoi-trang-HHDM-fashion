@@ -1,24 +1,28 @@
 <div class="payment-modal" id="payment-modal" aria-hidden="true" hidden>
   <div class="payment-backdrop" data-payment-close></div>
-  <section class="payment-dialog" role="dialog" aria-modal="true" aria-labelledby="payment-title" data-bank="<?= $escape(
-      PAYMENT_BANK_ID,
-  ) ?>" data-account="<?= $escape(PAYMENT_ACCOUNT_NO) ?>">
+  <section class="payment-dialog" role="dialog" aria-modal="true" aria-labelledby="payment-title">
     <button class="payment-close" type="button" aria-label="Đóng thanh toán" data-payment-close>×</button>
     <div class="payment-copy">
       <span class="section-kicker">HHDM · THANH TOÁN AN TOÀN</span>
-      <h2 id="payment-title">Quét mã để chuyển khoản</h2>
-      <p class="payment-lead">Dùng ứng dụng ngân hàng để quét VietQR. Số tiền và nội dung chuyển khoản đã được điền sẵn.</p>
+      <h2 id="payment-title">Thanh toán đơn hàng</h2>
+      <p class="payment-lead">Nhập thông tin giao hàng. Mã QR sẽ được tạo riêng cho đơn hàng sau khi xác nhận.</p>
+      <form class="checkout-details" id="checkout-details">
+        <label>Người nhận<input name="recipient" maxlength="150" autocomplete="name" required></label>
+        <label>Số điện thoại<input name="phone" type="tel" maxlength="20" autocomplete="tel" pattern="[0-9+(). -]{8,20}" required></label>
+        <label class="checkout-address">Địa chỉ giao hàng<textarea name="address" maxlength="500" rows="2" autocomplete="street-address" required></textarea></label>
+        <button class="checkout-confirm" type="submit">TẠO ĐƠN VÀ HIỆN MÃ QR</button>
+      </form>
       <div class="payment-order-items" id="payment-order-items"></div>
       <div class="payment-total"><span>Tổng thanh toán</span><strong id="payment-amount">0₫</strong></div>
-      <dl class="payment-details">
-        <div><dt>Ngân hàng</dt><dd>BIDV</dd></div>
-        <div><dt>Số tài khoản</dt><dd><span id="payment-account">8855252740</span><button type="button" class="copy-payment-value" data-copy="account">Sao chép</button></dd></div>
+      <dl class="payment-details" id="payment-details" hidden>
+        <div><dt>Ngân hàng</dt><dd><span id="payment-bank">—</span></dd></div>
+        <div><dt>Số tài khoản</dt><dd><span id="payment-account">—</span><button type="button" class="copy-payment-value" data-copy="account">Sao chép</button></dd></div>
         <div><dt>Nội dung chuyển khoản</dt><dd><span id="payment-reference"></span><button type="button" class="copy-payment-value" data-copy="reference">Sao chép</button></dd></div>
       </dl>
-      <p class="payment-note">Đơn hàng được xác nhận sau khi HHDM đối chiếu giao dịch BIDV.</p>
+      <p class="payment-note" id="payment-note" hidden>Đơn hàng sẽ được xác nhận tự động sau khi payOS ghi nhận giao dịch thành công.</p>
       <p class="payment-feedback" id="payment-feedback" aria-live="polite"></p>
     </div>
-    <div class="payment-qr-wrap"><img class="payment-qr" id="payment-qr" alt="Mã VietQR thanh toán qua BIDV" loading="eager"><span>VietQR · BIDV</span></div>
+    <div class="payment-qr-wrap" id="payment-qr-wrap" hidden><img class="payment-qr" id="payment-qr" alt="Mã QR thanh toán payOS" loading="eager"><span>Quét QR bằng ứng dụng ngân hàng</span><a id="payment-checkout-link" href="#" target="_blank" rel="noopener">Mở trang thanh toán</a></div>
   </section>
 </div>
-<script src="assets/js/payment.js?v=20261119" ></script>
+<script src="assets/js/payment.js?v=20261126-payos" defer></script>

@@ -24,8 +24,12 @@ define("DB_PORT", "3306");
 define("DB_USERNAME", "root");
 define("DB_PASSWORD", "");
 define("DB_NAME", "website_ban_hang_thoi_trang");
-define("PAYMENT_BANK_ID", "BIDV");
-define("PAYMENT_ACCOUNT_NO", "8855252740");
+$localPaymentConfigPath = __DIR__ . '/payments.local.php';
+$localPaymentConfig = is_file($localPaymentConfigPath) ? require $localPaymentConfigPath : [];
+define("PAYOS_CLIENT_ID", getenv('PAYOS_CLIENT_ID') ?: (string) ($localPaymentConfig['client_id'] ?? ''));
+define("PAYOS_API_KEY", getenv('PAYOS_API_KEY') ?: (string) ($localPaymentConfig['api_key'] ?? ''));
+define("PAYOS_CHECKSUM_KEY", getenv('PAYOS_CHECKSUM_KEY') ?: (string) ($localPaymentConfig['checksum_key'] ?? ''));
+define("APP_PUBLIC_URL", rtrim(getenv('APP_PUBLIC_URL') ?: (string) ($localPaymentConfig['app_public_url'] ?? BASE_URL), '/') . '/');
 define("DB_OPTIONS", [
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

@@ -1,0 +1,5 @@
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Thanh toán thành công · HHDM</title>
+<style>body{margin:0;background:#f7f5f0;color:#252820;font:15px Arial,sans-serif;display:grid;min-height:100vh;place-items:center}.card{max-width:520px;margin:24px;padding:44px;background:white;text-align:center;border:1px solid #e6e3dc}.mark{width:66px;height:66px;margin:auto;border-radius:50%;background:#58644b;color:#fff;display:grid;place-items:center;font-size:36px}h1{font:500 38px Georgia,serif;margin:20px 0 12px}p{color:#74776f;line-height:1.7}.order{font-weight:700;color:#252820}.button{display:inline-block;margin-top:18px;padding:14px 24px;background:#58644b;color:white;text-decoration:none;font-size:12px;letter-spacing:.08em}</style></head>
+<body><main class="card"><div class="mark" aria-hidden="true">✓</div><h1>Thanh toán thành công</h1><p>HHDM đã nhận được thanh toán cho đơn hàng <span class="order">#<?= (int) $orderIdForView ?></span>. Cảm ơn bạn đã mua sắm!</p><a class="button" href="index.php?page=home">TIẾP TỤC MUA SẮM</a></main></body></html>

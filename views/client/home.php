@@ -46,9 +46,9 @@ $heroSlideCount = count($heroSlides);
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/home.css">
+  <link rel="stylesheet" href="assets/css/home.css?v=payos-checkout">
 </head>
-<body data-logged-in="<?= !empty($user) ? 'true' : 'false' ?>" data-user-id="<?= (int) ($user['user_id'] ?? 0) ?>">
+<body data-logged-in="<?= !empty($user) ? 'true' : 'false' ?>" data-user-id="<?= (int) ($user['user_id'] ?? 0) ?>" data-user-name="<?= $escape($user['full_name'] ?? '') ?>" data-csrf-token="<?= $escape($_SESSION['csrf_token'] ?? '') ?>">
   <div class="announcement"><span>GIAO HÀNG MIỄN PHÍ</span> cho đơn hàng từ 799.000₫ <b>✦</b> Ưu đãi thành viên mới đến 15%</div>
   <header class="site-header">
     <div class="header-main">
@@ -111,6 +111,6 @@ $heroSlideCount = count($heroSlides);
   </aside>
   <div class="drawer-backdrop" id="drawer-backdrop"></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="assets/js/home.js?v=20261125" defer></script>
+  <script src="assets/js/home.js?v=20261126" defer></script>
 </body>
 </html>

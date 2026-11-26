@@ -5,7 +5,7 @@
         if (!CART_STORAGE_KEY) return [];
         try {
             const saved = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || "[]");
-            return Array.isArray(saved) ? saved.map((item) => ({ ...item, selected: item.selected !== false })) : [];
+            return Array.isArray(saved) ? saved.map((item) => ({ ...item, productId: Number(item.productId || (item.code || "").match(/HHDM-(\d+)/)?.[1] || 0), selected: item.selected !== false })) : [];
         } catch {
             return [];
         }
@@ -25,7 +25,7 @@
             cart.splice(
                 0,
                 cart.length,
-                ...(Array.isArray(saved) ? saved.map((item) => ({ ...item, selected: item.selected !== false })) : []),
+                ...(Array.isArray(saved) ? saved.map((item) => ({ ...item, productId: Number(item.productId || (item.code || "").match(/HHDM-(\d+)/)?.[1] || 0), selected: item.selected !== false })) : []),
             );
         } catch {}
         renderCart();
@@ -139,7 +139,7 @@
             }
             const key = button.dataset.code + "-" + selected.dataset.size;
             const existing = cart.find((item) => item.key === key);
-            if (existing && existing.quantity >= Number(selected.dataset.stock)) {
+            if (Number(selected.dataset.stock) < 1 || (existing && existing.quantity >= Number(selected.dataset.stock))) {
                 toast("Size " + selected.dataset.size + " chỉ còn " + selected.dataset.stock + " sản phẩm.");
                 return;
             }
@@ -148,6 +148,7 @@
             } else {
                 cart.push({
                     key,
+                    productId: Number(button.dataset.productId),
                     name: button.dataset.name,
                     code: button.dataset.code,
                     price: Number(button.dataset.price),
@@ -228,7 +229,13 @@
         if (!selectedCart.length) return;
         const amount = selectedCart.reduce((sum, item) => sum + item.price * item.quantity, 0);
         hideCart();
-        window.HHDMPayment.open({ items: selectedCart, amount });
+        window.HHDMPayment.open({ items: selectedCart, onCreated: () => {
+            for (let index = cart.length - 1; index >= 0; index--) {
+                if (cart[index].selected !== false) cart.splice(index, 1);
+            }
+            saveCart();
+            renderCart();
+        } });
     });
     document.getElementById("signup-form").addEventListener("submit", (event) => {
         event.preventDefault();
