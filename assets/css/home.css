@@ -145,7 +145,8 @@ button {
     white-space: nowrap;
 }
 .account-actions > a,
-.cart-trigger {
+.cart-trigger,
+.account-trigger {
     display: flex;
     align-items: center;
     gap: 7px;
@@ -153,12 +154,30 @@ button {
 .action-icon {
     font-size: 19px;
 }
-.cart-trigger {
+.cart-trigger,
+.account-trigger {
     position: relative;
     border: 0;
     background: none;
     cursor: pointer;
     font-size: 10px;
+    color: var(--text);
+    font-family: var(--sans);
+}
+.logout-form {
+    margin: 0;
+}
+.logout-form button {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    font-size: 10px;
+    color: var(--text);
+    font-family: var(--sans);
+}
+.logout-form button:hover {
+    color: var(--olive);
 }
 .cart-trigger b {
     display: inline-grid;
@@ -171,17 +190,76 @@ button {
     background: var(--olive);
     font-size: 9px;
 }
-.welcome {
-    max-width: 130px;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.account-drawer {
+    position: fixed;
+    z-index: 42;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(360px, 92vw);
+    display: flex;
+    flex-direction: column;
+    padding: 23px;
+    background: #fff;
+    box-shadow: -12px 0 35px rgba(0, 0, 0, 0.12);
+    transform: translateX(105%);
+    transition: transform 0.48s var(--ease-drawer);
+    will-change: transform;
 }
-.logout-form button {
-    padding: 0;
+.account-drawer.is-open {
+    transform: translateX(0);
+}
+.account-drawer-head {
+    padding-bottom: 20px;
+}
+.account-drawer-greeting {
+    margin: 10px 0 0;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.5;
+}
+.account-drawer-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 20px;
+}
+.account-drawer-logout {
+    margin: 0;
+}
+.account-drawer-link {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 14px 0;
     border: 0;
+    border-bottom: 1px solid var(--line);
     background: transparent;
+    color: var(--text);
+    text-align: left;
     cursor: pointer;
+    font-family: var(--sans);
+}
+.account-drawer-link span {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.account-drawer-link small {
+    color: var(--muted);
     font-size: 10px;
+}
+.account-drawer-link:hover span {
+    color: var(--olive);
+}
+.account-drawer-button {
+    color: var(--red);
+}
+.account-drawer-button span,
+.account-drawer-button:hover span {
+    color: var(--red);
 }
 .main-nav {
     min-height: 43px;
@@ -1428,16 +1506,17 @@ button {
     .account-actions {
         gap: 13px;
     }
-    .account-actions > a span:last-child,
+            .account-actions > a span:last-child,
     .cart-trigger > span:nth-child(2),
-    .welcome,
-    .logout-form {
+    .account-trigger-label,
+    .logout-form button {
         display: none;
     }
     .action-icon {
         font-size: 20px;
     }
-    .cart-trigger {
+    .cart-trigger,
+    .account-trigger {
         gap: 3px;
         padding: 0;
     }

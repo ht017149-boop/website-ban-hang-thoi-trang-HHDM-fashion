@@ -31,19 +31,41 @@
         renderCart();
     }
     const drawer = document.getElementById("cart-drawer");
+    const accountDrawer = document.getElementById("account-drawer");
     const backdrop = document.getElementById("drawer-backdrop");
+    const accountTrigger = document.getElementById("account-trigger");
     const money = (n) => new Intl.NumberFormat("vi-VN").format(n) + "₫";
+    function syncDrawerState() {
+        const cartOpen = drawer.classList.contains("is-open");
+        const accountOpen = accountDrawer?.classList.contains("is-open");
+        backdrop.classList.toggle("is-open", cartOpen || !!accountOpen);
+        document.body.classList.toggle("drawer-open", cartOpen || !!accountOpen);
+    }
     function showCart() {
+        hideAccount();
         drawer.classList.add("is-open");
-        backdrop.classList.add("is-open");
         drawer.setAttribute("aria-hidden", "false");
-        document.body.classList.add("drawer-open");
+        syncDrawerState();
     }
     function hideCart() {
         drawer.classList.remove("is-open");
-        backdrop.classList.remove("is-open");
         drawer.setAttribute("aria-hidden", "true");
-        document.body.classList.remove("drawer-open");
+        syncDrawerState();
+    }
+    function showAccount() {
+        if (!accountDrawer) return;
+        hideCart();
+        accountDrawer.classList.add("is-open");
+        accountDrawer.setAttribute("aria-hidden", "false");
+        accountTrigger?.setAttribute("aria-expanded", "true");
+        syncDrawerState();
+    }
+    function hideAccount() {
+        if (!accountDrawer) return;
+        accountDrawer.classList.remove("is-open");
+        accountDrawer.setAttribute("aria-hidden", "true");
+        accountTrigger?.setAttribute("aria-expanded", "false");
+        syncDrawerState();
     }
     function renderCart() {
         const count = isLoggedIn ? cart.reduce((sum, item) => sum + item.quantity, 0) : 0;
@@ -101,9 +123,20 @@
     }
     document.getElementById("cart-trigger").addEventListener("click", showCart);
     document.getElementById("cart-close").addEventListener("click", hideCart);
-    backdrop.addEventListener("click", hideCart);
+    accountTrigger?.addEventListener("click", () => {
+        if (accountDrawer?.classList.contains("is-open")) hideAccount();
+        else showAccount();
+    });
+    document.getElementById("account-close")?.addEventListener("click", hideAccount);
+    backdrop.addEventListener("click", () => {
+        hideCart();
+        hideAccount();
+    });
     document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") hideCart();
+        if (e.key === "Escape") {
+            hideCart();
+            hideAccount();
+        }
     });
     let toastTimer;
     function toast(message) {

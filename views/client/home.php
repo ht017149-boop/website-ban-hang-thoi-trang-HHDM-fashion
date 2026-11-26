@@ -46,7 +46,7 @@ $heroSlideCount = count($heroSlides);
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/home.css?v=payos-checkout">
+  <link rel="stylesheet" href="assets/css/home.css?v=account-drawer">
 </head>
 <body data-logged-in="<?= !empty($user) ? 'true' : 'false' ?>" data-user-id="<?= (int) ($user['user_id'] ?? 0) ?>" data-user-name="<?= $escape($user['full_name'] ?? '') ?>" data-csrf-token="<?= $escape($_SESSION['csrf_token'] ?? '') ?>">
   <div class="announcement"><span>GIAO HÀNG MIỄN PHÍ</span> cho đơn hàng từ 799.000₫ <b>✦</b> Ưu đãi thành viên mới đến 15%</div>
@@ -56,8 +56,22 @@ $heroSlideCount = count($heroSlides);
       <a class="brand" href="#home" aria-label="HHDM Fashion trang chủ">HHDM<span>FASHION</span></a>
       <form class="search-form" id="search-form" role="search"><label class="sr-only" for="search-input">Tìm kiếm sản phẩm</label><input id="search-input" type="search" placeholder="Bạn đang tìm sản phẩm nào?"><button type="submit" aria-label="Tìm kiếm">⌕</button></form>
       <div class="account-actions">
-        <?php if ($user): ?><?php if (($user['role'] ?? '') === 'admin'): ?><a href="index.php?page=admin">Quản trị</a><?php endif; ?><span class="welcome">Xin chào, <?= $escape($user['full_name'] ?? 'bạn') ?></span><form method="post" action="index.php?page=logout" class="logout-form"><input type="hidden" name="csrf_token" value="<?= $escape($_SESSION['csrf_token'] ?? '') ?>"><button type="submit">Đăng xuất</button></form><?php else: ?><a href="index.php?page=login"><span class="action-icon">♙</span><span>Tài khoản</span></a><?php endif; ?>
-        <button class="cart-trigger" id="cart-trigger" type="button" aria-label="Mở giỏ hàng"><span class="action-icon">♧</span><span>Giỏ hàng</span><b id="cart-count">0</b></button>
+        <?php if ($user): ?>
+          <?php if (($user['role'] ?? '') === 'admin'): ?>
+            <a href="index.php?page=admin">Quản trị</a>
+            <button class="cart-trigger" id="cart-trigger" type="button" aria-label="Mở giỏ hàng"><span class="action-icon">♧</span><span>Giỏ hàng</span><b id="cart-count">0</b></button>
+            <form method="post" action="index.php?page=logout" class="logout-form">
+              <input type="hidden" name="csrf_token" value="<?= $escape($_SESSION['csrf_token'] ?? '') ?>">
+              <button type="submit">Đăng xuất</button>
+            </form>
+          <?php else: ?>
+            <button class="cart-trigger" id="cart-trigger" type="button" aria-label="Mở giỏ hàng"><span class="action-icon">♧</span><span>Giỏ hàng</span><b id="cart-count">0</b></button>
+            <button class="account-trigger" id="account-trigger" type="button" aria-label="Mở menu tài khoản" aria-expanded="false" aria-controls="account-drawer"><span class="action-icon">♙</span><span class="account-trigger-label">Tài khoản của tôi</span></button>
+          <?php endif; ?>
+        <?php else: ?>
+          <button class="cart-trigger" id="cart-trigger" type="button" aria-label="Mở giỏ hàng"><span class="action-icon">♧</span><span>Giỏ hàng</span><b id="cart-count">0</b></button>
+          <a href="index.php?page=login"><span class="action-icon">♙</span><span>Tài khoản</span></a>
+        <?php endif; ?>
       </div>
     </div>
     <nav class="main-nav" id="main-nav" aria-label="Danh mục chính"><a class="sale-link" href="#new-arrivals">HÀNG MỚI</a><?php foreach ($categories as $category): ?><a href="#<?= $escape($category['slug']) ?>"><?= $escape(mb_strtoupper($category['category_name'])) ?></a><?php endforeach; ?><a href="#collection">BỘ SƯU TẬP</a><a class="sale-link" href="#sale">ƯU ĐÃI</a><a href="#stories">GÓC PHỐI ĐỒ</a><a href="#footer">LIÊN HỆ</a></nav>
@@ -109,8 +123,28 @@ $heroSlideCount = count($heroSlides);
       <button class="checkout-button" type="button" disabled>THANH TOÁN MÓN ĐÃ CHỌN</button>
     </div>
   </aside>
+  <?php if ($user && ($user['role'] ?? '') !== 'admin'): ?>
+  <aside class="account-drawer" id="account-drawer" aria-hidden="true">
+    <div class="cart-head account-drawer-head">
+      <div>
+        <span class="section-kicker">HHDM ACCOUNT</span><h2>Tài khoản của tôi</h2><p class="account-drawer-greeting">Xin chào, <?= $escape($user['full_name'] ?? 'bạn') ?></p>
+      </div>
+      <button id="account-close" type="button" aria-label="Đóng menu tài khoản">×</button>
+    </div>
+    <nav class="account-drawer-nav" aria-label="Menu tài khoản">
+      <a class="account-drawer-link" href="index.php?page=profile"><span>Tài khoản của tôi</span><small>Thông tin cá nhân</small></a>
+      <form method="post" action="index.php?page=logout" class="account-drawer-logout">
+        <input type="hidden" name="csrf_token" value="<?= $escape($_SESSION['csrf_token'] ?? '') ?>">
+        <button type="submit" class="account-drawer-link account-drawer-button">
+          <span>Đăng xuất</span>
+          <small>Đăng xuất tài khoản</small>
+        </button>
+      </form>
+    </nav>
+  </aside>
+  <?php endif; ?>
   <div class="drawer-backdrop" id="drawer-backdrop"></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="assets/js/home.js?v=20261126" defer></script>
+  <script src="assets/js/home.js?v=account-drawer" defer></script>
 </body>
 </html>
