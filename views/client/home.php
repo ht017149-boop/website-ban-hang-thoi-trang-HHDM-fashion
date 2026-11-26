@@ -46,7 +46,7 @@ $heroSlideCount = count($heroSlides);
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/home.css?v=account-drawer">
+  <link rel="stylesheet" href="assets/css/home.css?v=account-drawer-delivery">
 </head>
 <body data-logged-in="<?= !empty($user) ? 'true' : 'false' ?>" data-user-id="<?= (int) ($user['user_id'] ?? 0) ?>" data-user-name="<?= $escape($user['full_name'] ?? '') ?>" data-csrf-token="<?= $escape($_SESSION['csrf_token'] ?? '') ?>">
   <div class="announcement"><span>GIAO HÀNG MIỄN PHÍ</span> cho đơn hàng từ 799.000₫ <b>✦</b> Ưu đãi thành viên mới đến 15%</div>

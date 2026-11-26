@@ -2094,6 +2094,11 @@ body.search-mode .site-footer {
 .checkout-address,.checkout-confirm { grid-column:1 / -1; }
 .checkout-confirm { min-height:44px; border:0; background:var(--olive); color:#fff; font:700 10px 'DM Sans',Arial,sans-serif; letter-spacing:.1em; cursor:pointer; }
 .checkout-confirm:disabled { opacity:.6; cursor:wait; }
+.order-created-notice { display:flex; align-items:center; gap:12px; margin:14px 0; padding:14px; background:#edf4ea; border:1px solid #cbdcc4; color:#33432e; }
+.order-created-notice[hidden] { display:none !important; }
+.order-created-notice>span { width:28px; height:28px; flex:0 0 28px; border-radius:50%; display:grid; place-items:center; background:#58644b; color:#fff; font-weight:700; }
+.order-created-notice div { display:grid; gap:4px; }
+.order-created-notice small { color:#687264; font-size:11px; }
 .payment-details[hidden],.payment-note[hidden] { display:none !important; }
 .payment-total {
     display: flex;

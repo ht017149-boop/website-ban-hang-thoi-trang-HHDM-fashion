@@ -20,7 +20,7 @@ $hasDiscount = $product['old'] !== null;
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/home.css?v=payos-checkout">
+  <link rel="stylesheet" href="assets/css/home.css?v=order-success">
   <style>
     .detail-main { max-width: 1180px; margin: 0 auto; padding: 38px 22px 70px; }
     .breadcrumb { color: #999b95; font-size: 10px; letter-spacing: .07em; margin-bottom: 22px; }
@@ -69,6 +69,7 @@ $hasDiscount = $product['old'] !== null;
       <a class="brand" href="index.php?page=home" aria-label="HHDM Fashion trang chủ">HHDM<span>FASHION</span></a>
       <div class="account-actions">
         <a href="index.php?page=home"><span class="action-icon">←</span><span>Về trang chủ</span></a>
+        <?php if ($user): ?><a href="index.php?page=my_orders"><span>Đơn hàng</span></a><?php endif; ?>
         <button class="cart-trigger" id="cart-trigger" type="button" aria-label="Mở giỏ hàng"><span class="action-icon">♧</span><span>Giỏ hàng</span><b id="cart-count">0</b></button>
       </div>
     </div>

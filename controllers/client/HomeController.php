@@ -137,6 +137,18 @@ class HomeController
         require PATH_VIEW_CLIENT . 'payment-success.php';
     }
 
+    public function myOrders(): void
+    {
+        $userId = (int) ($_SESSION['user']['user_id'] ?? 0);
+        if ($userId < 1) {
+            header('Location: index.php?page=login');
+            exit;
+        }
+        $orders = (new OrderModel())->getOrdersForUser($userId);
+        $escape = static fn($value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+        require PATH_VIEW_CLIENT . 'my-orders.php';
+    }
+
     public function paymentCancel(): void
     {
         $userId = (int) ($_SESSION['user']['user_id'] ?? 0);

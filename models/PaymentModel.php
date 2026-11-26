@@ -134,7 +134,8 @@ class PaymentModel extends BaseModel
     {
         $statement = $this->pdo->prepare(
             "SELECT 1 FROM orders o INNER JOIN order_payments op ON op.order_id = o.order_id
-             WHERE o.order_id = :order_id AND o.user_id = :user_id AND o.status = 'completed' AND op.status = 'paid' LIMIT 1"
+             WHERE o.order_id = :order_id AND o.user_id = :user_id
+               AND o.status IN ('confirmed', 'shipping', 'completed') AND op.status = 'paid' LIMIT 1"
         );
         $statement->execute(['order_id' => $orderId, 'user_id' => $userId]);
         return (bool) $statement->fetchColumn();
@@ -170,9 +171,16 @@ class PaymentModel extends BaseModel
                 || (int) round((float) $order['total_amount']) !== $amount) {
                 throw new DomainException('Payment amount does not match the order.');
             }
-            $this->pdo->prepare("UPDATE orders SET status = 'completed' WHERE order_id = :order_id AND status = 'pending'")
+            $this->pdo->prepare(
+                "UPDATE orders SET status = 'confirmed',
+                    expected_delivery_from = DATE_ADD(CURRENT_DATE(), INTERVAL 3 DAY),
+                    expected_delivery_to = DATE_ADD(CURRENT_DATE(), INTERVAL 5 DAY)
+                 WHERE order_id = :order_id AND status = 'pending'"
+            )
                 ->execute(['order_id' => $orderId]);
             $this->pdo->prepare("UPDATE order_payments SET status = 'paid', paid_at = CURRENT_TIMESTAMP WHERE order_id = :order_id AND status <> 'paid'")
+                ->execute(['order_id' => $orderId]);
+            $this->pdo->prepare("UPDATE late_delivery_vouchers SET status = 'redeemed', redeemed_at = CURRENT_TIMESTAMP WHERE reserved_order_id = :order_id AND status = 'reserved'")
                 ->execute(['order_id' => $orderId]);
             $this->pdo->commit();
         } catch (Throwable $exception) {

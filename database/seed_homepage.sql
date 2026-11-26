@@ -5,7 +5,7 @@ INSERT INTO categories (category_name, slug, description, status) VALUES
   ('Thanh lịch công sở', 'office', 'Chỉn chu trong từng chuyển động.', 'active'),
   ('Phong cách cuối tuần', 'weekend', 'Thoải mái để đi bất cứ đâu.', 'active'),
   ('Thời trang nam', 'menswear', 'Thiết kế hiện đại, linh hoạt cho phong cách nam mỗi ngày.', 'active'),
-  ('Phụ kiện', 'accessories', 'Những điểm nhấn hoàn thiện phong cách của bạn.', 'active')
+  ('Phụ kiện', 'accessories', 'Tất, đồ mặc trong, balo và túi đeo cho nhu cầu hằng ngày.', 'active')
 ON DUPLICATE KEY UPDATE
   category_name = VALUES(category_name),
   description = VALUES(description),
@@ -46,6 +46,9 @@ FROM (
   UNION ALL SELECT 'accessories', 'Túi đeo chéo Mini', 'Túi đeo chéo nhỏ gọn, điểm nhấn cho trang phục.', 490000, NULL, 14, 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=780&q=85'
   UNION ALL SELECT 'accessories', 'Đồng hồ Classic', 'Đồng hồ mặt tối giản, dây đeo dễ phối.', 890000, 790000, 12, 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=780&q=85'
   UNION ALL SELECT 'accessories', 'Balo City nhẹ', 'Balo gọn nhẹ cho công việc và những chuyến đi ngắn.', 650000, NULL, 15, 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=780&q=85'
+  UNION ALL SELECT 'accessories', 'Tất cổ ngắn basic', 'Tất cổ ngắn mềm nhẹ, dễ phối đồ. Giá 2.000₫ / đôi.', 2000, NULL, 300, 'https://images.unsplash.com/photo-1586350977771-b3b0abd50c82?auto=format&fit=crop&w=780&q=85'
+  UNION ALL SELECT 'accessories', 'Sịp nam cotton basic', 'Quần sịp cotton co giãn, thoáng mát, mặc thoải mái cả ngày.', 59000, NULL, 80, 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=780&q=85'
+  UNION ALL SELECT 'accessories', 'Túi đeo vai Daily', 'Túi đeo vai gọn nhẹ, tiện dụng cho những vật dụng thiết yếu.', 390000, NULL, 20, 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=780&q=85'
 ) AS seed
 INNER JOIN categories c ON c.slug = seed.category_slug
 WHERE NOT EXISTS (
@@ -89,11 +92,35 @@ INNER JOIN (
   UNION ALL SELECT 'Túi đeo chéo Mini', 'Free Size', 'Nâu'
   UNION ALL SELECT 'Đồng hồ Classic', 'Free Size', 'Bạc'
   UNION ALL SELECT 'Balo City nhẹ', 'Free Size', 'Đen'
+  UNION ALL SELECT 'Tất cổ ngắn basic', 'Free Size', 'Trắng'
+  UNION ALL SELECT 'Sịp nam cotton basic', 'S', 'Đen'
+  UNION ALL SELECT 'Sịp nam cotton basic', 'M', 'Đen'
+  UNION ALL SELECT 'Sịp nam cotton basic', 'L', 'Đen'
+  UNION ALL SELECT 'Sịp nam cotton basic', 'XL', 'Đen'
+  UNION ALL SELECT 'Túi đeo vai Daily', 'Free Size', 'Đen'
 ) AS sizes ON sizes.product_name = p.product_name
 WHERE NOT EXISTS (
   SELECT 1 FROM product_variants existing
   WHERE existing.product_id = p.product_id AND existing.size = sizes.size
 );
+
+UPDATE product_variants pv
+INNER JOIN products p ON p.product_id = pv.product_id
+SET pv.stock_quantity = CASE
+  WHEN p.product_name = 'Tất cổ ngắn basic' THEN 300
+  WHEN p.product_name = 'Sịp nam cotton basic' THEN 20
+  WHEN p.product_name = 'Túi đeo vai Daily' THEN 20
+  ELSE pv.stock_quantity
+END
+WHERE p.product_name IN ('Tất cổ ngắn basic', 'Sịp nam cotton basic', 'Túi đeo vai Daily');
+
+UPDATE products p
+SET p.stock_quantity = (
+  SELECT COALESCE(SUM(pv.stock_quantity), 0)
+  FROM product_variants pv
+  WHERE pv.product_id = p.product_id AND pv.status = 'active'
+)
+WHERE p.product_name IN ('Tất cổ ngắn basic', 'Sịp nam cotton basic', 'Túi đeo vai Daily');
 
 INSERT INTO product_variants (product_id, size, color, sku, stock_quantity, status)
 SELECT p.product_id, sizes.size, sizes.color,

@@ -9,10 +9,11 @@
     const itemsList = document.getElementById("payment-order-items");
     const referenceLabel = document.getElementById("payment-reference");
     const feedback = document.getElementById("payment-feedback");
-    const checkoutLink = document.getElementById("payment-checkout-link");
     const checkoutForm = document.getElementById("checkout-details");
     const paymentDetails = document.getElementById("payment-details");
     const paymentNote = document.getElementById("payment-note");
+    const orderCreatedNotice = document.getElementById("order-created-notice");
+    const orderCreatedNumber = document.getElementById("order-created-number");
     const money = (value) => new Intl.NumberFormat("vi-VN").format(value) + "₫";
     let pendingItems = [];
     let onCreated;
@@ -49,7 +50,7 @@
         qrWrap.hidden = true;
         paymentDetails.hidden = true;
         paymentNote.hidden = true;
-        checkoutLink.removeAttribute("href");
+        orderCreatedNotice.hidden = true;
         itemsList.replaceChildren(...pendingItems.map((item) => {
             const row = document.createElement("p");
             row.textContent = `${item.name} · Size ${item.size} × ${item.quantity}`;
@@ -81,18 +82,24 @@
                 headers: { "Content-Type": "application/json", "X-CSRF-Token": document.body.dataset.csrfToken || "" },
                 body: JSON.stringify({
                     items: pendingItems.map((item) => ({ product_id: item.productId, size: item.size, quantity: item.quantity })),
-                    checkout: { recipient: form.get("recipient"), phone: form.get("phone"), address: form.get("address") },
+                    checkout: {
+                        recipient: form.get("recipient"),
+                        phone: form.get("phone"),
+                        address: form.get("address"),
+                        voucher_code: form.get("voucher_code"),
+                    },
                 }),
             });
             const result = await response.json();
             if (!response.ok || !result.success) throw new Error(result.error || "Không thể khởi tạo thanh toán.");
             const order = result.order;
             if (typeof onCreated === "function") onCreated();
+            orderCreatedNumber.textContent = "Mã đơn hàng: #" + order.order_id + (order.discount > 0 ? " · Đã giảm " + money(order.discount) : "");
+            orderCreatedNotice.hidden = false;
             amountLabel.textContent = money(order.amount);
             referenceLabel.textContent = order.reference;
             document.getElementById("payment-bank").textContent = [order.payment.bank_bin, order.payment.account_name].filter(Boolean).join(" · ") || "payOS";
             document.getElementById("payment-account").textContent = order.payment.account_number || "Xem trên trang payOS";
-            checkoutLink.href = order.payment.checkout_url;
             itemsList.replaceChildren(...order.items.map((item) => {
                 const row = document.createElement("p");
                 row.textContent = `${item.name} · Size ${item.size} × ${item.quantity}`;
@@ -125,7 +132,7 @@
             navigator.clipboard.writeText(value).then(() => { feedback.textContent = "Đã sao chép."; }).catch(() => { feedback.textContent = value; });
         } else feedback.textContent = value;
     });
-    qr.addEventListener("error", () => { feedback.textContent = "Không tải được hình QR. Hãy bấm Mở trang thanh toán để quét mã trực tiếp từ payOS."; });
+    qr.addEventListener("error", () => { feedback.textContent = "Không tải được hình QR. Vui lòng thử lại sau ít phút."; });
     document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !modal.hidden) closePayment(); });
     window.HHDMPayment = { open: openPayment, close: closePayment };
 })();

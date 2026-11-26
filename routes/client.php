@@ -25,6 +25,9 @@ return static function (): void {
         case "payment_cancel":
             (new HomeController())->paymentCancel();
             return;
+        case "my_orders":
+            (new HomeController())->myOrders();
+            return;
         case "register":
             (new AuthController())->register();
             return;

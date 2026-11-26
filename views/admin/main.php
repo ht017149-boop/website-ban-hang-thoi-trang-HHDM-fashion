@@ -24,6 +24,7 @@ $adminName = $escape($_SESSION['user']['full_name'] ?? 'Quản trị viên');
       <a class="side-link <?= $currentPage === 'dashboard' ? 'active' : '' ?>" href="index.php?page=admin">Dashboard</a>
       <div class="side-label">QUẢN LÝ</div>
       <a class="side-link <?= $currentPage === 'accounts' ? 'active' : '' ?>" href="index.php?page=admin-accounts">Tài khoản</a>
+      <a class="side-link <?= $currentPage === 'orders' ? 'active' : '' ?>" href="index.php?page=admin-orders">Đơn hàng & vận chuyển</a>
       <a class="side-link <?= $currentPage === 'products' ? 'active' : '' ?>" href="index.php?page=admin-products">Sản phẩm</a>
       <a class="side-link <?= $currentPage === 'categories' ? 'active' : '' ?>" href="index.php?page=admin-categories">Danh mục</a>
       <a class="side-link <?= $currentPage === 'comments' ? 'active' : '' ?>" href="index.php?page=admin-comments">Đánh giá</a>

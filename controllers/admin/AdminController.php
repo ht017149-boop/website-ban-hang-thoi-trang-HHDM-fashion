@@ -2,6 +2,7 @@
 
 require_once PATH_MODEL . 'UserModel.php';
 require_once PATH_MODEL . 'ProductModel.php';
+require_once PATH_MODEL . 'OrderModel.php';
 
 class AdminController
 {
@@ -33,6 +34,9 @@ class AdminController
             if (in_array($page, ['admin-comments', 'admin-comment-show'], true)) {
                 $this->handleCommentAction();
             }
+            if ($page === 'admin-orders') {
+                $this->handleOrderAction();
+            }
         }
 
         if ($page === 'admin-comment-show') {
@@ -41,6 +45,10 @@ class AdminController
         }
         if ($page === 'admin-comments') {
             $this->showComments();
+            return;
+        }
+        if ($page === 'admin-orders') {
+            $this->showOrders();
             return;
         }
         if ($page === 'admin-category-create') {
@@ -82,6 +90,38 @@ class AdminController
         $flash = $this->takeFlash();
         $contentView = PATH_VIEW_ADMIN . 'dashboard.php';
         require PATH_VIEW_MAIN_ADMIN;
+    }
+
+    private function showOrders(): void
+    {
+        $orders = (new OrderModel())->getAdminOrders();
+        $currentPage = 'orders';
+        $flash = $this->takeFlash();
+        $csrfToken = $this->csrfToken();
+        $contentView = PATH_VIEW_ADMIN . 'orders/index.php';
+        require PATH_VIEW_MAIN_ADMIN;
+    }
+
+    private function handleOrderAction(): void
+    {
+        if (!$this->validCsrfToken()) {
+            $_SESSION['admin_flash'] = 'Phiên làm việc đã hết hạn. Vui lòng thử lại.';
+            header('Location: index.php?page=admin-orders');
+            exit;
+        }
+        $orderId = (int) ($_POST['order_id'] ?? 0);
+        $status = (string) ($_POST['status'] ?? '');
+        $updated = (new OrderModel())->updateDeliveryStatus(
+            $orderId,
+            $status,
+            (string) ($_POST['shipping_company'] ?? ''),
+            (string) ($_POST['tracking_number'] ?? '')
+        );
+        $_SESSION['admin_flash'] = $updated
+            ? ($status === 'shipping' ? 'Đã cập nhật đơn sang đang vận chuyển.' : 'Đã xác nhận đơn giao thành công.')
+            : 'Không thể cập nhật trạng thái đơn hàng. Hãy kiểm tra trạng thái hiện tại.';
+        header('Location: index.php?page=admin-orders');
+        exit;
     }
 
     private function showProducts(): void

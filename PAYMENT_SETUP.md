@@ -21,7 +21,7 @@ File `payments.local.php` bị Git bỏ qua để không đẩy khóa bí mật 
 
 ## 3. Cài bảng dữ liệu
 
-Chạy lần lượt `database/create_order_items.sql` và `database/create_order_payments.sql` trên database `website_ban_hang_thoi_trang`.
+Chạy lần lượt `database/create_order_items.sql`, `database/create_order_payments.sql` và `database/add_order_delivery_tracking.sql` trên database `website_ban_hang_thoi_trang`.
 
 ## 4. Đăng ký webhook
 
